@@ -1,0 +1,55 @@
+"""Backfill autonomous AgentRun/AgentStep ``meta`` from the legacy typed columns."""
+
+from django.db import migrations
+
+RUN_KEYS = ["max_cycles", "max_subagents", "goal", "backlog", "stop_reason"]
+STEP_KEYS = [
+    "reflection",
+    "task",
+    "action",
+    "tool",
+    "tool_args",
+    "observation",
+    "spawned",
+    "subagent_steps",
+    "backlog",
+    "goal_complete",
+]
+
+
+def _pick(obj, keys):
+    out = {}
+    for k in keys:
+        v = getattr(obj, k)
+        if v in ("", None, False):
+            continue
+        out[k] = v
+    return out
+
+
+def forwards(apps, schema_editor):
+    AgentRun = apps.get_model("llm_analysis", "AgentRun")
+    AgentStep = apps.get_model("llm_analysis", "AgentStep")
+    for run in AgentRun.objects.filter(kind="autonomous").iterator():
+        run.meta = _pick(run, RUN_KEYS)
+        run.save(update_fields=["meta"])
+    for step in AgentStep.objects.filter(run__kind="autonomous").iterator():
+        step.meta = _pick(step, STEP_KEYS)
+        step.save(update_fields=["meta"])
+
+
+def backwards(apps, schema_editor):
+    AgentRun = apps.get_model("llm_analysis", "AgentRun")
+    AgentStep = apps.get_model("llm_analysis", "AgentStep")
+    AgentRun.objects.filter(kind="autonomous").update(meta=dict())
+    AgentStep.objects.filter(run__kind="autonomous").update(meta=dict())
+
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ("llm_analysis", "0032_backfill_dag_meta"),
+    ]
+
+    operations = [
+        migrations.RunPython(forwards, backwards),
+    ]

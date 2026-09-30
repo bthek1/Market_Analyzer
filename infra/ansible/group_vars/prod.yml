@@ -1,0 +1,36 @@
+app_dir: /home/app/stock_market
+container_ip: 192.168.2.200
+db_host: 192.168.2.201
+db_container_ip: 192.168.2.201
+ollama_base_url: "http://192.168.2.202:11434"
+ollama_model: qwen3:8b
+ollama_main_model: qwen3:8b
+ollama_classifier_model: qwen2.5:3b
+ollama_embed_model: nomic-embed-text
+db_name: stockmarket
+db_user: stockmarket
+django_settings_module: core.settings.prod
+github_repo_url: git@github.com:bthek1/Market_Analyzer.git
+# Browser agent (/browse). Off: it needs a ~500 MB Chromium install and reaches
+# the public internet. Set true and re-run the provision role to enable it, then
+# switch browser_enabled on in LLM Settings.
+browser_agent_enabled: false
+
+# Observability (issue #2): Grafana + Prometheus + Loki on stockmarket-obs, with a
+# Grafana Alloy agent on every host. Off by default - turning it on installs Docker and
+# ~1 GB of images on .208 and an agent on the app and db boxes.
+#
+# Before the first run, add BOTH of these to vault/prod.yml (ansible-vault edit):
+#   vault_grafana_admin_password     - Grafana's admin login
+#   vault_postgres_exporter_password - the read-only postgres_exporter DB role
+# Both are referenced unconditionally once enabled, so a missing one fails the run
+# loudly rather than silently provisioning something with a default password.
+observability_enabled: true
+obs_host: 192.168.2.208
+
+# Tracing (issue #5 phase 3). Separate from observability_enabled on purpose: the
+# transport (Tempo + the Alloy OTLP receiver) can be live while the application stays
+# untraced, which is exactly the state phases 1-2 left things in. Turning this on adds
+# an OTLP exporter to the api and celery processes.
+otel_traces_enabled: true
+otel_traces_sampler_ratio: 1.0

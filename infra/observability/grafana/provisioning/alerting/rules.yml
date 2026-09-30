@@ -1,0 +1,509 @@
+# Infrastructure alert rules (issue #2, phase 2). Provisioned as code - these are
+# read-only in the Grafana UI, so change them here and restart the stack.
+#
+# Every rule uses Grafana's standard three-node shape: A is the instant PromQL query,
+# B reduces it to a single value per series, C thresholds B. `condition: C` is what
+# actually fires. Writing the comparison into the PromQL instead would work for firing
+# but loses the numeric value in the notification, which is the useful part.
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: infrastructure
+    folder: Stock Market
+    interval: 1m
+    rules:
+      # -------------------------------------------------------------------
+      - uid: sm-disk-usage
+        title: Disk above 85 percent
+        condition: C
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.host }} root filesystem is {{ humanize $values.B.Value }}% full"
+          description: >-
+            The db host matters most here: PostgreSQL plus 30 days of WAL fills a 20 GB
+            disk faster than anything else in this deployment.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              # Root filesystem only. Without the mountpoint filter this fires on every
+              # loop-mounted snap and container overlay on the box.
+              expr: >-
+                100 - (node_filesystem_avail_bytes{mountpoint="/"}
+                / node_filesystem_size_bytes{mountpoint="/"} * 100)
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: gt, params: [85]}
+        noDataState: NoData
+        execErrState: Error
+        isPaused: false
+
+      # -------------------------------------------------------------------
+      - uid: sm-pg-connections
+        title: PostgreSQL connections near max_connections
+        condition: C
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL is at {{ humanize $values.B.Value }}% of max_connections"
+          description: >-
+            Gunicorn runs 4 workers and two Celery workers hold their own connections;
+            exhausting the pool takes the whole API down, not just one request.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              expr: >-
+                sum(pg_stat_database_numbackends)
+                / max(pg_settings_max_connections) * 100
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: gt, params: [80]}
+        noDataState: NoData
+        execErrState: Error
+        isPaused: false
+
+      # -------------------------------------------------------------------
+      - uid: sm-redis-memory
+        title: Redis memory near maxmemory
+        condition: C
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis is at {{ humanize $values.B.Value }}% of its maxmemory limit"
+          description: >-
+            Redis is the Celery broker; hitting maxmemory means task loss or refused
+            enqueues, not just a slow cache.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              # The `and ... > 0` guard is load-bearing, not defensive tidiness. Ubuntu's
+              # default redis.conf sets NO maxmemory, so redis_memory_max_bytes is 0; the
+              # bare ratio is then +Inf, which is > 90 and would fire this alert forever
+              # from the moment the exporter comes up.
+              expr: >-
+                (redis_memory_used_bytes / redis_memory_max_bytes * 100)
+                and redis_memory_max_bytes > 0
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: gt, params: [90]}
+        # NoData is the NORMAL state while maxmemory is unset - the guard above returns
+        # an empty vector - so NoData must not alert here.
+        noDataState: OK
+        execErrState: Error
+        isPaused: false
+
+      # -------------------------------------------------------------------
+      - uid: sm-host-not-reporting
+        title: A host has stopped reporting
+        condition: C
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Only {{ humanize $values.B.Value }} of 3 hosts are reporting metrics"
+          description: >-
+            Collection is PUSH-based, so a dead host's series simply stops arriving
+            rather than going to 0 - `up == 0` would never fire. Counting the survivors
+            is what detects it. UPDATE THE 3 BELOW IF A HOST IS ADDED.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              # `or vector(0)` covers the case where every agent is gone and the query
+              # would otherwise return an empty result (NoData, not a low count).
+              expr: "count(up{job=\"unix\"}) or vector(0)"
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: lt, params: [3]}
+        noDataState: Alerting
+        execErrState: Error
+        isPaused: false
+
+  - orgId: 1
+    name: application
+    folder: Stock Market
+    interval: 1m
+    rules:
+      # -------------------------------------------------------------------
+      - uid: sm-http-5xx
+        title: HTTP 5xx rate elevated
+        condition: C
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ humanize $values.B.Value }}% of responses are 5xx"
+          description: >-
+            Counted across all four gunicorn worker ports. Check
+            {unit="stockmarket-api.service"} | json | level="ERROR" in Loki, and use the
+            request_id on any line to pull that whole request.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              # clamp_min on the denominator: with no traffic at all the ratio would be
+              # 0/0 = NaN, and a NaN comparison is not the "no alert" answer you want -
+              # it is simply undefined. The floor makes a silent app read 0%, not NaN.
+              expr: >-
+                sum(rate(django_http_responses_total_by_status_total{status=~"5.."}[5m]))
+                / clamp_min(sum(rate(django_http_responses_total_by_status_total[5m])), 0.001)
+                * 100
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: gt, params: [5]}
+        noDataState: OK
+        execErrState: Error
+        isPaused: false
+
+      # -------------------------------------------------------------------
+      - uid: sm-celery-failures
+        title: Celery task failure rate elevated
+        condition: C
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ humanize $values.B.Value }}% of Celery tasks are failing"
+          description: >-
+            The yfinance ingestion tasks and the knowledge-graph sweeps are the usual
+            cause. See the "Failures by task" panel on the Celery dashboard.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 1800, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              expr: >-
+                sum(rate(celery_task_failed_total[15m]))
+                / clamp_min(sum(rate(celery_task_succeeded_total[15m]))
+                + sum(rate(celery_task_failed_total[15m])), 0.001) * 100
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: gt, params: [10]}
+        # An idle period produces no rate samples at all; that is not a failure.
+        noDataState: OK
+        execErrState: Error
+        isPaused: false
+
+      # -------------------------------------------------------------------
+      - uid: sm-celery-backlog
+        title: Celery queue depth sustained high
+        condition: C
+        # 15m deliberately: bootstrap_tick and the sync dispatchers enqueue in bursts, so
+        # a short spike is normal operation. Only a backlog that does not drain matters.
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ humanize $values.B.Value }} tasks queued and not draining"
+          description: >-
+            A queue that climbs and never falls usually means the worker is dead rather
+            than slow - check `systemctl status stockmarket-celery`.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 1800, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              expr: "sum(redis_key_size)"
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: gt, params: [500]}
+        # Redis deletes an empty list, so an idle broker exports no redis_key_size series
+        # at all - NoData is the normal quiet state here, not a problem.
+        noDataState: OK
+        execErrState: Error
+        isPaused: false
+
+  - orgId: 1
+    name: domain
+    folder: Stock Market
+    interval: 5m
+    rules:
+      # -------------------------------------------------------------------
+      - uid: sm-sync-stale
+        title: Price ingestion has fallen behind
+        condition: C
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "The stalest company has had no price sync for {{ humanize $values.B.Value }}s"
+          description: >-
+            Reports the WORST company, not the average - one ticker stuck days behind is
+            the signal and a mean over 500 would bury it. Check the Celery dashboard
+            first: a dead worker looks exactly like this.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 3600, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              # Price bars only. Financials are quarterly, so a 90-day age there is
+              # normal and a shared threshold would be meaningless.
+              expr: 'max(stockmarket_sync_oldest_age_seconds{sync_type="price"})'
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              # 3 days. The AI summary's own freshness gate refuses to opine past 3 days
+              # of price staleness, so this fires at the point the product degrades.
+              conditions:
+                - evaluator: {type: gt, params: [259200]}
+        noDataState: NoData
+        execErrState: Error
+        isPaused: false
+
+      # -------------------------------------------------------------------
+      - uid: sm-agent-runs-stuck
+        title: Agent runs stuck in running
+        condition: C
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ humanize $values.B.Value }} agent run(s) have been running over an hour"
+          description: >-
+            stream_in_background drains a workflow on a daemon thread even if the client
+            disconnects, so a run stuck this long usually means the process died
+            mid-workflow and the row was never given a terminal status.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 3600, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              expr: "sum(stockmarket_agent_runs_stuck) or vector(0)"
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: gt, params: [2]}
+        noDataState: OK
+        execErrState: Error
+        isPaused: false
+
+      # -------------------------------------------------------------------
+      - uid: sm-ollama-down
+        title: Ollama unreachable
+        condition: C
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Ollama is not answering /api/tags"
+          description: >-
+            Every LLM workflow, the AI company summaries and the knowledge-graph
+            expansion all stop. The Ollama host (192.168.2.202) is NOT in the Ansible
+            inventory, so this is a manual fix.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 900, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              expr: "stockmarket_ollama_up"
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: lt, params: [1]}
+        # NoData here means the exporter itself is down, which is also worth knowing.
+        noDataState: Alerting
+        execErrState: Error
+        isPaused: false
+
+      # -------------------------------------------------------------------
+      - uid: sm-kg-near-cap
+        title: Knowledge graph approaching its node cap
+        condition: C
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The knowledge graph is at {{ humanize $values.B.Value }}% of KG_MAX_NODES"
+          description: >-
+            At the cap, expansion stops silently - new concepts are simply not created.
+            Either raise KG_MAX_NODES or prune (manage.py merge_concepts, the rerank
+            sweep, edges/reduce).
+        data:
+          - refId: A
+            relativeTimeRange: {from: 3600, to: 0}
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              # The cap is exported as its own series rather than hard-coded here, so
+              # changing KG_MAX_NODES does not silently invalidate the alert.
+              expr: >-
+                stockmarket_kg_concepts
+                / clamp_min(stockmarket_kg_max_concepts, 1) * 100
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: gt, params: [90]}
+        noDataState: OK
+        execErrState: Error
+        isPaused: false
+
+      # -------------------------------------------------------------------
+      - uid: sm-deploy-failed
+        title: Deploy failed
+        condition: C
+        # Short, because a deploy failure is acted on immediately and deploy.log is only
+        # written during a deploy.
+        for: 0s
+        labels:
+          severity: critical
+        annotations:
+          summary: "deploy.sh reported a failure"
+          description: >-
+            The CI/CD webhook fires deploy.sh on the app host and nothing downstream
+            checks its exit - the GitHub workflow only curls the webhook. This log-based
+            rule is the only automated signal that a deploy actually failed.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 900, to: 0}
+            # The only LOKI-backed rule. Metrics cannot see this: deploy.sh emits no
+            # metrics, and the deploy workflow reports success as soon as the webhook is
+            # accepted, long before the script finishes.
+            datasourceUid: loki
+            model:
+              refId: A
+              editorMode: code
+              queryType: instant
+              expr: >-
+                sum(count_over_time({job="deploy"} |~ `(?i)(error|failed|fatal)` [10m]))
+          - refId: B
+            datasourceUid: __expr__
+            model: {refId: B, type: reduce, expression: A, reducer: last, settings: {mode: dropNN}}
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: {type: gt, params: [0]}
+        # Quiet between deploys is the normal state.
+        noDataState: OK
+        execErrState: Error
+        isPaused: false

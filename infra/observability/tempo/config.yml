@@ -1,0 +1,102 @@
+# Tempo 2.x single-binary, filesystem-backed (issue #5). Like Loki next door, the
+# distributed modes would be pure overhead for three hosts on a LAN.
+#
+# Tempo is the TRACE store. It does not index span attributes the way Loki indexes
+# labels, so high-cardinality attributes (AgentRun ids, tickers, concept slugs) are
+# cheap here - which is exactly why they must still never become Prometheus or Loki
+# labels. See the cardinality note in CLAUDE.md.
+
+# Lets Grafana stream search results back as they are found rather than blocking on the
+# full query. Off by default; the Tempo datasource expects it.
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+  # NOT 9096: Loki already binds that on its own container, and while separate
+  # containers could reuse it, keeping them distinct means a stray host-network debug
+  # run does not collide.
+  grpc_listen_port: 9097
+  log_level: warn
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        # Alloy forwards over gRPC; the HTTP port is published too so a one-off
+        # telemetrygen / curl smoke test does not need a gRPC client.
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  # Flush completed blocks promptly. The default is 30m, which on a low-traffic install
+  # means a finished trace can sit in the WAL unqueryable for half an hour -
+  # indistinguishable from "tracing is broken" while you are testing the pipeline.
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    # 15 days, deliberately matched to Prometheus' --storage.tsdb.retention.time so a
+    # trace and the metrics around it age out together. test_observability_assets.py
+    # pins the two against each other.
+    block_retention: 360h
+
+# Span metrics (issue #5 phase 5). Tempo derives RED metrics from the spans passing
+# through it and remote-writes them to Prometheus, which is what lets a DASHBOARD show
+# Ollama latency by model - a trace store alone cannot answer "p95 over the last hour".
+#
+# This is also how exemplars arrive: send_exemplars puts a trace id on the histogram
+# bucket, so a latency spike in Grafana is one click from the trace that caused it.
+metrics_generator:
+  registry:
+    # Distinguishes generated metrics from anything scraped, so a confusing series can
+    # always be traced back to its source.
+    external_labels:
+      source: tempo
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+  traces_storage:
+    path: /var/tempo/generator/traces
+  processor:
+    span_metrics:
+      # CARDINALITY IS THE RULE HERE TOO. Span metrics create a series per span name per
+      # dimension combination, so only BOUNDED attributes may be listed: a handful of
+      # models and ten agent kinds. agent.run_id must NEVER appear here - it is
+      # unbounded, it is exactly why it lives in a span attribute rather than a label,
+      # and adding it would multiply every span name by every run ever executed.
+      dimensions:
+        - llm.model
+        - agent.kind
+    service_graphs: {}
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+# Tempo has no equivalent of Prometheus' --storage.tsdb.retention.size, so the disk
+# bound is an INGESTION bound instead: a runaway exporter is capped in bytes/sec rather
+# than caught after it has filled the 100 GB shared with Prometheus and Loki.
+overrides:
+  defaults:
+    # The generator does nothing until its processors are enabled here.
+    metrics_generator:
+      processors:
+        - span-metrics
+        - service-graphs
+    ingestion:
+      rate_limit_bytes: 15000000
+      burst_size_bytes: 20000000
+    global:
+      # One pathological trace (a long agent run fanning out) cannot become unbounded.
+      max_bytes_per_trace: 5000000
+
+usage_report:
+  reporting_enabled: false

@@ -1,0 +1,18 @@
+[Unit]
+Description=Stock Market Celery Worker
+After=network.target redis.service
+
+[Service]
+User=app
+WorkingDirectory={{ app_dir }}/backend
+EnvironmentFile={{ app_dir }}/.env
+# -E publishes task lifecycle events, which run_metrics_exporter consumes. Left on
+# unconditionally rather than gated on observability_enabled: with no consumer the
+# events go to an exchange with no bound queue and are simply discarded, which is
+# cheaper than making a metrics toggle require a worker restart.
+ExecStart={{ app_dir }}/backend/.venv/bin/celery -A core worker -l info -E
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

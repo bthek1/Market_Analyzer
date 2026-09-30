@@ -1,0 +1,7 @@
+---
+- hosts: stockmarket-db
+  become: true
+  vars_files:
+    - vault/prod.yml
+  roles:
+    - db

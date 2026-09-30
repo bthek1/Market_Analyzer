@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Display & headings</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .row-spec { display: grid; grid-template-columns: 100px 1fr; align-items: baseline; gap: 16px; padding: 6px 0; border-bottom: 1px dashed var(--sm-border); }
+  .row-spec:last-child { border-bottom: 0; }
+  .meta { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row-spec"><span class="meta">H1 · 36/700</span><span class="sm-h1">Real-time stock analysis</span></div>
+  <div class="row-spec"><span class="meta">H2 · 24/700</span><span class="sm-h2">Your watchlist, in one place</span></div>
+  <div class="row-spec"><span class="meta">H3 · 20/600</span><span class="sm-h3">Price History</span></div>
+  <div class="row-spec"><span class="meta">H4 · 18/600</span><span class="sm-h4">Stock Market</span></div>
+</div>
+</body>
+</html>

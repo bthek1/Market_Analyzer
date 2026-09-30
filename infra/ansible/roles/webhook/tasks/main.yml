@@ -1,0 +1,44 @@
+---
+- name: Install webhook binary
+  apt:
+    name: webhook
+    state: present
+    update_cache: true
+
+- name: Create webhook config directory
+  file:
+    path: /etc/webhook
+    state: directory
+    owner: app
+    group: app
+    mode: "0750"
+
+- name: Write hooks config
+  template:
+    src: hooks.json.j2
+    dest: /etc/webhook/hooks.json
+    owner: app
+    group: app
+    mode: "0640"
+  notify: restart webhook
+
+- name: Copy deploy script from repo
+  copy:
+    src: "{{ playbook_dir }}/../../infra/deploy.sh"
+    dest: "{{ app_dir }}/infra/deploy.sh"
+    owner: app
+    group: app
+    mode: "0750"
+
+- name: Deploy webhook systemd unit
+  template:
+    src: stockmarket-webhook.service.j2
+    dest: /etc/systemd/system/stockmarket-webhook.service
+  notify: restart webhook
+
+- name: Enable and start webhook service
+  systemd:
+    name: stockmarket-webhook
+    enabled: true
+    state: started
+    daemon_reload: true

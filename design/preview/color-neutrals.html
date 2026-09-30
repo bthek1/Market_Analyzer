@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Neutrals</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .ramp { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0; border-radius: var(--sm-radius-md); overflow: hidden; border: 1px solid var(--sm-border); }
+  .stop { height: 80px; display: flex; flex-direction: column; justify-content: flex-end; padding: 6px 6px; font-family: var(--sm-font-mono); font-size: 10px; }
+  .legend { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0; font-family: var(--sm-font-mono); font-size: 10px; color: var(--sm-fg-subtle); }
+  .legend > * { padding: 0 6px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="ramp">
+    <div class="stop" style="background:#f9fafb;color:#111827">50</div>
+    <div class="stop" style="background:#f3f4f6;color:#111827">100</div>
+    <div class="stop" style="background:#e5e7eb;color:#111827">200</div>
+    <div class="stop" style="background:#d1d5db;color:#111827">300</div>
+    <div class="stop" style="background:#9ca3af;color:#111827">400</div>
+    <div class="stop" style="background:#6b7280;color:#fff">500</div>
+    <div class="stop" style="background:#4b5563;color:#fff">600</div>
+    <div class="stop" style="background:#374151;color:#fff">700</div>
+    <div class="stop" style="background:#1f2937;color:#fff">800</div>
+    <div class="stop" style="background:#111827;color:#fff">900</div>
+  </div>
+  <div class="legend">
+    <span>F9FAFB</span><span>F3F4F6</span><span>E5E7EB</span><span>D1D5DB</span><span>9CA3AF</span><span>6B7280</span><span>4B5563</span><span>374151</span><span>1F2937</span><span>111827</span>
+  </div>
+  <div class="hairline"></div>
+  <div class="col" style="gap:4px">
+    <span class="sm-eyebrow">Semantic mapping</span>
+    <span class="sm-body" style="color:var(--sm-fg-muted)">
+      <b style="color:var(--sm-fg)">50</b> page bg ·
+      <b style="color:var(--sm-fg)">100</b> muted ·
+      <b style="color:var(--sm-fg)">200</b> border ·
+      <b style="color:var(--sm-fg)">400</b> faint text ·
+      <b style="color:var(--sm-fg)">500</b> subtle / placeholder ·
+      <b style="color:var(--sm-fg)">600</b> muted text ·
+      <b style="color:var(--sm-fg)">900</b> primary text
+    </span>
+  </div>
+</div>
+</body>
+</html>

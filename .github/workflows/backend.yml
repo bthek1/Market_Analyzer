@@ -1,0 +1,60 @@
+name: Backend Tests
+
+on:
+  # NOT on push to main: "Auto Version" (version.yml) already calls this via
+  # workflow_call, and running both duplicated every job on the shared runners.
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_call:
+
+concurrency:
+  group: backend-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  test:
+    runs-on: self-hosted
+    timeout-minutes: 20
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      DJANGO_SETTINGS_MODULE: core.settings.test
+      SECRET_KEY: "ci-only-secret-key-min-50-chars-not-for-production"
+      DATABASE_URL: "sqlite://:memory:"
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      UV_HTTP_TIMEOUT: 300
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv sync
+
+      - name: Run migrations
+        run: uv run python manage.py migrate --noinput
+
+      - name: Run tests
+        run: >
+          uv run pytest
+          -n 2
+          --durations=25
+          --color=yes
+          --maxfail=3
+          -ra
+          ${{ github.ref_name == 'develop' && '-m "not slow"' || '' }}

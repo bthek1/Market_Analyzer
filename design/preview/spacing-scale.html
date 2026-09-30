@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Spacing scale</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .scale { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: grid; grid-template-columns: 70px 80px 1fr; align-items: center; gap: 12px; font-family: var(--sm-font-mono); font-size: 12px; }
+  .bar { height: 14px; background: #2563eb; border-radius: 3px; }
+  .lbl { color: var(--sm-fg); font-weight: 600; }
+  .val { color: var(--sm-fg-subtle); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="scale">
+    <div class="row"><span class="lbl">space-1</span><span class="val">4 / 0.25rem</span><span class="bar" style="width:4px"></span></div>
+    <div class="row"><span class="lbl">space-2</span><span class="val">8 / 0.5rem</span><span class="bar" style="width:8px"></span></div>
+    <div class="row"><span class="lbl">space-3</span><span class="val">12 / 0.75rem</span><span class="bar" style="width:12px"></span></div>
+    <div class="row"><span class="lbl">space-4</span><span class="val">16 / 1rem</span><span class="bar" style="width:16px"></span></div>
+    <div class="row"><span class="lbl">space-6</span><span class="val">24 / 1.5rem</span><span class="bar" style="width:24px"></span></div>
+    <div class="row"><span class="lbl">space-8</span><span class="val">32 / 2rem · page gutter</span><span class="bar" style="width:32px"></span></div>
+    <div class="row"><span class="lbl">space-12</span><span class="val">48 / 3rem</span><span class="bar" style="width:48px"></span></div>
+  </div>
+</div>
+</body>
+</html>

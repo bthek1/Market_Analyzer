@@ -1,0 +1,33 @@
+# Values come from the repo-root .env, which compose auto-loads (see .env.example).
+# The defaults below reproduce the pre-consolidation hardcoded values, so a checkout
+# with no .env behaves exactly as before.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-stockmarket}
+      POSTGRES_USER: ${POSTGRES_USER:-stockmarket}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stockmarket}
+    ports:
+      # Host-side port is non-default so it never collides with a system PostgreSQL.
+      - "${POSTGRES_PORT:-5435}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stockmarket}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

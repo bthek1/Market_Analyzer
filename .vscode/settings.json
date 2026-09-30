@@ -1,0 +1,70 @@
+{
+  // ── Python / pytest ────────────────────────────────────────────────────────
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python3",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "backend",
+    "--rootdir=${workspaceFolder}/backend",
+    "--ds=core.settings.test",
+    "--tb=short",
+    "--no-header",
+    "--no-cov"
+  ],
+  "python.envFile": "${workspaceFolder}/.env",
+
+  // ── Vitest ─────────────────────────────────────────────────────────────────
+  "vitest.enable": true,
+  "vitest.rootConfig": "${workspaceFolder}/frontend/vitest.config.ts",
+
+  // ── Editor ─────────────────────────────────────────────────────────────────
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ── Workspace Theme: Dark Khaki ────────────────────────────────────────────
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.colorCustomizations": {
+    // Editor - very dark khaki
+    "editor.background": "#080805",
+    "editorGutter.background": "#0a0a06",
+    "editorLineNumber.foreground": "#3a3525",
+    "editorLineNumber.activeForeground": "#7a6b3a",
+    // Sidebar / explorer - dark khaki
+    "sideBar.background": "#131109",
+    "sideBarSectionHeader.background": "#181508",
+    "sideBarSectionHeader.foreground": "#907830",
+    // Activity bar - deep khaki
+    "activityBar.background": "#0f0e08",
+    "activityBar.foreground": "#9a8232",
+    "activityBar.inactiveForeground": "#3e3820",
+    // Tabs - khaki toned
+    "editorGroupHeader.tabsBackground": "#131109",
+    "tab.inactiveBackground": "#131109",
+    "tab.activeBackground": "#181508",
+    "tab.activeBorderTop": "#7a6828",
+    "tab.inactiveForeground": "#4a4428",
+    "tab.activeForeground": "#9a8232",
+    // Terminal - dark khaki
+    "terminal.background": "#0a0907",
+    // Panel (bottom: Problems, Output, etc.)
+    "panel.background": "#0f0e08",
+    "panelTitle.activeForeground": "#907830",
+    "panelTitle.activeBorder": "#7a6828",
+    // Status bar - muted gold on dark khaki
+    "statusBar.background": "#181508",
+    "statusBar.foreground": "#9a8232",
+    // Title bar - deep khaki
+    "titleBar.activeBackground": "#0f0e08",
+    "titleBar.activeForeground": "#907830",
+    "titleBar.inactiveBackground": "#0f0e08",
+    "titleBar.inactiveForeground": "#3e3820"
+  }
+}

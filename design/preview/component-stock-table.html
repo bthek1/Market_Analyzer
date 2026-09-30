@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Stock table</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  table { width: 100%; border-collapse: collapse; font: 400 14px var(--sm-font-sans); }
+  thead tr { background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+  th { text-align: left; font-weight: 500; padding: 8px 12px; }
+  tbody tr { border-bottom: 1px solid #e5e7eb; }
+  tbody tr:hover { background: #f9fafb; }
+  td { padding: 8px 12px; }
+  .symbol { color: #2563eb; text-decoration: underline; font-weight: 500; font-family: var(--sm-font-mono); }
+  .muted  { color: #6b7280; }
+  .num    { font-family: var(--sm-font-mono); font-variant-numeric: tabular-nums; }
+  .up     { color: #16a34a; }
+  .down   { color: #dc2626; }
+</style>
+</head>
+<body>
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>Symbol</th><th>Name</th><th>Exchange</th><th>Sector</th><th style="text-align:right">Last</th><th style="text-align:right">Δ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><a class="symbol">AAPL</a></td><td>Apple Inc.</td><td class="muted">NASDAQ</td><td class="muted">Technology</td><td class="num" style="text-align:right">187.42</td><td class="num down" style="text-align:right">−1.15%</td></tr>
+      <tr><td><a class="symbol">NVDA</a></td><td>NVIDIA Corporation</td><td class="muted">NASDAQ</td><td class="muted">Semiconductors</td><td class="num" style="text-align:right">842.16</td><td class="num up" style="text-align:right">+1.49%</td></tr>
+      <tr><td><a class="symbol">TSLA</a></td><td>Tesla, Inc.</td><td class="muted">NASDAQ</td><td class="muted">Automotive</td><td class="num" style="text-align:right">218.04</td><td class="num up" style="text-align:right">+0.32%</td></tr>
+      <tr><td><a class="symbol">SPY</a></td><td>SPDR S&amp;P 500 ETF</td><td class="muted">NYSE</td><td class="muted">—</td><td class="num" style="text-align:right">542.00</td><td class="num" style="text-align:right;color:#6b7280">0.00%</td></tr>
+    </tbody>
+  </table>
+</div>
+</body>
+</html>

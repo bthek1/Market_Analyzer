@@ -1,0 +1,291 @@
+// Grafana Alloy - MANAGED BY ANSIBLE (infra/ansible/roles/observability).
+// Local edits are overwritten on the next run.
+//
+// Alloy is the whole collection half of the stack on this host: it reads the journal,
+// tails extra log files, runs the host exporter, and PUSHES to {{ obs_host }}. Nothing
+// scrapes this box from outside, which is why no inbound ports are opened here.
+
+logging {
+  level  = "warn"
+  format = "logfmt"
+}
+
+// ---------------------------------------------------------------------------
+// Sinks
+// ---------------------------------------------------------------------------
+
+loki.write "default" {
+  endpoint {
+    url = "http://{{ obs_host }}:3100/loki/api/v1/push"
+  }
+
+  external_labels = {
+    host = "{{ inventory_hostname }}",
+  }
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://{{ obs_host }}:9090/api/v1/write"
+  }
+
+  external_labels = {
+    host = "{{ inventory_hostname }}",
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Log processing
+// ---------------------------------------------------------------------------
+
+loki.process "app" {
+  forward_to = [loki.write.default.receiver]
+
+  // Django, Celery and nginx all emit one JSON object per line (see
+  // backend/core/logging.py and the nginx json_combined log_format). Lines that are
+  // not JSON - systemd, sshd, deploy.sh - pass through this stage untouched rather
+  // than failing, so everything can share one pipeline.
+  stage.json {
+    expressions = {
+      level = "level",
+    }
+  }
+
+  // ONLY bounded values become labels. level is a handful of values, so it is safe.
+  // request_id, symbol, user id and AgentRun id stay in the body deliberately: a label
+  // is an index, and an unbounded label value creates one Loki stream per value.
+  // Query them with `| json | request_id="..."` instead, which costs nothing.
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sources: systemd journal
+// ---------------------------------------------------------------------------
+
+loki.relabel "journal" {
+  // forward_to is empty because this block exists only to expose .rules to the journal
+  // source below - it is a rule holder, not a pipeline stage.
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  // A coarse level for non-JSON lines. Our own lines get a more accurate one from
+  // loki.process above, which runs after this and wins.
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
+  }
+}
+
+loki.source.journal "host" {
+  forward_to    = [loki.process.app.receiver]
+  relabel_rules = loki.relabel.journal.rules
+  labels        = { job = "systemd-journal" }
+  // Repeated _SYSTEMD_UNIT matches are OR-ed by sd-journal (same field), so this reads
+  // exactly the units listed in the role's alloy_journal_units. An EMPTY list renders an
+  // empty matcher, which means no filter at all - i.e. the whole journal.
+  matches       = "{% for unit in alloy_journal_units %}_SYSTEMD_UNIT={{ unit }}{% if not loop.last %} {% endif %}{% endfor %}"
+  max_age       = "{{ alloy_journal_max_age }}"
+}
+
+{% if alloy_log_files %}
+// ---------------------------------------------------------------------------
+// Sources: log files (nginx, deploy.sh - neither writes to the journal)
+// ---------------------------------------------------------------------------
+
+local.file_match "extra" {
+  path_targets = [
+{% for entry in alloy_log_files %}
+    {__path__ = "{{ entry.path }}", job = "{{ entry.job }}"},
+{% endfor %}
+  ]
+}
+
+loki.source.file "extra" {
+  targets    = local.file_match.extra.targets
+  forward_to = [loki.process.app.receiver]
+}
+{% endif %}
+
+// ---------------------------------------------------------------------------
+// Metrics: host exporter
+// ---------------------------------------------------------------------------
+
+// CAVEAT: in an unprivileged LXC this reports the CONTAINER's view of /proc and /sys,
+// not the Proxmox host's. Useful for per-container memory and disk; true hardware
+// metrics need Proxmox's own pve-exporter, which is out of scope for issue #2.
+prometheus.exporter.unix "host" {
+}
+
+// The exporter's targets arrive carrying job="integrations/unix", and a target's own job
+// label beats prometheus.scrape's job_name - so job_name alone does NOT rename it. Every
+// dashboard and the host-down alert select job="unix", so it is forced here.
+discovery.relabel "unix" {
+  targets = prometheus.exporter.unix.host.targets
+
+  rule {
+    target_label = "job"
+    replacement  = "unix"
+  }
+}
+
+prometheus.scrape "host" {
+  targets         = discovery.relabel.unix.output
+  forward_to      = [prometheus.remote_write.default.receiver]
+  job_name        = "unix"
+  scrape_interval = "{{ alloy_scrape_interval }}"
+}
+{% if alloy_redis_address %}
+
+// ---------------------------------------------------------------------------
+// Metrics: Redis (Celery broker)
+// ---------------------------------------------------------------------------
+
+prometheus.exporter.redis "broker" {
+  redis_addr = "{{ alloy_redis_address }}"
+  // Reports redis_key_size per key. For a Celery queue the Redis value is a LIST, so
+  // its length is the queue depth - the number redis_db_keys cannot give you.
+  check_keys = [{% for key in alloy_redis_check_keys %}"{{ key }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+}
+
+// Same job-label override as the unix exporter above.
+discovery.relabel "redis" {
+  targets = prometheus.exporter.redis.broker.targets
+
+  rule {
+    target_label = "job"
+    replacement  = "redis"
+  }
+}
+
+prometheus.scrape "redis" {
+  targets         = discovery.relabel.redis.output
+  forward_to      = [prometheus.remote_write.default.receiver]
+  job_name        = "redis"
+  scrape_interval = "{{ alloy_scrape_interval }}"
+}
+{% endif %}
+{% if alloy_postgres_dsn %}
+
+// ---------------------------------------------------------------------------
+// Metrics: PostgreSQL
+// ---------------------------------------------------------------------------
+
+// Read from a 0640 file rather than inlined: the DSN carries the exporter password,
+// and is_secret keeps Alloy from echoing it in its own UI or debug output.
+local.file "pg_dsn" {
+  filename  = "{{ alloy_postgres_dsn_file }}"
+  is_secret = true
+}
+
+prometheus.exporter.postgres "db" {
+  data_source_names = [local.file.pg_dsn.content]
+}
+
+// Same job-label override as the unix exporter above.
+discovery.relabel "postgres" {
+  targets = prometheus.exporter.postgres.db.targets
+
+  rule {
+    target_label = "job"
+    replacement  = "postgres"
+  }
+}
+
+prometheus.scrape "postgres" {
+  targets         = discovery.relabel.postgres.output
+  forward_to      = [prometheus.remote_write.default.receiver]
+  job_name        = "postgres"
+  scrape_interval = "{{ alloy_scrape_interval }}"
+}
+{% endif %}
+{% for scrape in alloy_app_scrape_targets %}
+
+// ---------------------------------------------------------------------------
+// Metrics: {{ scrape.job }}
+// ---------------------------------------------------------------------------
+
+prometheus.scrape "{{ scrape.job }}" {
+  targets = [
+{% for target in scrape.targets %}
+    {__address__ = "{{ target }}"},
+{% endfor %}
+  ]
+  forward_to      = [prometheus.remote_write.default.receiver]
+  job_name        = "{{ scrape.job }}"
+  scrape_interval = "{{ alloy_scrape_interval }}"
+}
+{% endfor %}
+{% if alloy_traces_enabled %}
+
+// ---------------------------------------------------------------------------
+// Traces: OTLP receiver -> Tempo (issue #5)
+//
+// The third signal, and the only one Alloy RECEIVES rather than reads or scrapes.
+// Instrumented processes on this host push spans to the loopback; Alloy batches them
+// and forwards to Tempo on {{ obs_host }}. Same one-directional shape as the other two
+// sinks: the app never learns where Tempo lives, and nothing off-box reaches in.
+// ---------------------------------------------------------------------------
+
+// LOOPBACK on purpose. The only clients are local (gunicorn workers, Celery prefork
+// children), so binding the LAN would let anything on the network inject spans into our
+// traces - and spans are attacker-controlled text rendered straight into a UI.
+otelcol.receiver.otlp "app" {
+  grpc {
+    endpoint = "127.0.0.1:4317"
+  }
+
+  http {
+    endpoint = "127.0.0.1:4318"
+  }
+
+  output {
+    traces = [otelcol.processor.attributes.host.input]
+  }
+}
+
+// The traces equivalent of the external_labels on loki.write / prometheus.remote_write
+// above. Without it a span carries no indication of which box produced it, and with
+// three hosts pushing into one Tempo that is unrecoverable after the fact.
+otelcol.processor.attributes "host" {
+  action {
+    key    = "host"
+    value  = "{{ inventory_hostname }}"
+    action = "upsert"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+
+// Not optional at this scale. Unbatched, every span is its own export call - which
+// inside a Celery prefork child means a network round trip in the middle of a task.
+otelcol.processor.batch "default" {
+  timeout = "2s"
+
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "{{ alloy_otlp_endpoint }}"
+
+    // Plain h2c on a trusted LAN, the same posture as the Loki push and Prometheus
+    // remote-write endpoints next door: Tempo's receiver has no auth either, which is
+    // why none of this may ever be routed off the private network.
+    tls {
+      insecure = true
+    }
+  }
+}
+{% endif %}

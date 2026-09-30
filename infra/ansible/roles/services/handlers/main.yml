@@ -1,0 +1,25 @@
+---
+- name: reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: reload nginx
+  systemd:
+    name: nginx
+    state: reloaded
+
+# Only fires when the unit file actually changes. A daemon-reload alone would leave the
+# running worker on its old command line, i.e. still without -E.
+- name: restart celery
+  systemd:
+    name: stockmarket-celery
+    state: restarted
+    daemon_reload: true
+
+# Environment= only takes effect on a restart; a daemon-reload leaves the running
+# gunicorn master with its old environment, so the metrics ports stay unbound.
+- name: restart api
+  systemd:
+    name: stockmarket-api
+    state: restarted
+    daemon_reload: true

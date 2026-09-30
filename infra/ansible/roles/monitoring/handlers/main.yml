@@ -1,0 +1,8 @@
+---
+# oneshot + RemainAfterExit means a restart is a `docker compose down` then `up -d`,
+# which is what picks up changed config files and image tags.
+- name: restart observability stack
+  systemd:
+    name: observability-stack
+    state: restarted
+    daemon_reload: true

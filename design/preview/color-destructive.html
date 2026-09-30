@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Destructive / danger</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .demo { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; align-items: center; }
+  .banner { background:#fef2f2; color:#b91c1c; padding:12px 14px; border-radius: var(--sm-radius-sm); font-size: 14px; }
+  .ghost { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:8px 14px; border-radius: var(--sm-radius-sm); font: 500 14px Inter,sans-serif; cursor: pointer; }
+  .link { background: none; border: 0; color:#dc2626; font: 400 14px Inter,sans-serif; cursor: pointer; padding: 0; }
+  .link:hover { text-decoration: underline; }
+  .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sw { height: 48px; border-radius: var(--sm-radius-sm); border: 1px solid var(--sm-border); display:flex; align-items:flex-end; padding: 4px 6px; font-family: var(--sm-font-mono); font-size: 10px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="demo">
+    <div class="col">
+      <div class="banner">Invalid email or password.</div>
+      <div class="row">
+        <button class="ghost">Remove from watchlist</button>
+        <button class="link">Logout</button>
+      </div>
+    </div>
+    <div class="col">
+      <div class="swatches">
+        <div class="sw" style="background:#fef2f2;color:#111">red-50</div>
+        <div class="sw" style="background:#fecaca;color:#111">red-200</div>
+        <div class="sw" style="background:#ef4444;color:#fff">red-500</div>
+        <div class="sw" style="background:#dc2626;color:#fff">red-600</div>
+        <div class="sw" style="background:#b91c1c;color:#fff">red-700</div>
+        <div class="sw" style="background:#fff;color:#dc2626;border-color:#dc2626">on bg</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

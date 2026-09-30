@@ -1,0 +1,23 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff lint (backend)
+        language: system
+        entry: bash -c 'uv run --project backend ruff check --fix "$@"' --
+        files: ^backend/.*\.py$
+        pass_filenames: true
+
+      - id: ruff-format
+        name: ruff format (backend)
+        language: system
+        entry: bash -c 'uv run --project backend ruff format "$@"' --
+        files: ^backend/.*\.py$
+        pass_filenames: true
+
+      - id: eslint
+        name: eslint --fix (frontend)
+        language: system
+        entry: bash -c 'cd frontend && npx eslint --fix "${@#frontend/}"' --
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: true

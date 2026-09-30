@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Radius scale</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .tile { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .shape { width: 100px; height: 100px; background: #eff6ff; border: 1px solid #2563eb; }
+  .name  { font-family: var(--sm-font-mono); font-size: 12px; color: var(--sm-fg); font-weight: 600; }
+  .meta  { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="grid">
+    <div class="tile"><div class="shape" style="border-radius: 4px"></div><span class="name">radius-sm</span><span class="meta">4px · inputs, buttons</span></div>
+    <div class="tile"><div class="shape" style="border-radius: 6px"></div><span class="name">radius-md</span><span class="meta">6px · badges</span></div>
+    <div class="tile"><div class="shape" style="border-radius: 8px"></div><span class="name">radius-lg</span><span class="meta">8px · cards</span></div>
+    <div class="tile"><div class="shape" style="border-radius: 12px"></div><span class="name">radius-xl</span><span class="meta">12px · sheets</span></div>
+  </div>
+</div>
+</body>
+</html>

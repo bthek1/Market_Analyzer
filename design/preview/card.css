@@ -1,0 +1,33 @@
+/* Shared card chrome for preview/ tiles. Each card is a borderless white
+   surface that fills the registered viewport. */
+@import url("../colors_and_type.css");
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--sm-bg-elevated);
+  color: var(--sm-fg);
+  font-family: var(--sm-font-sans);
+}
+.card {
+  padding: 24px 28px;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; gap: 8px; }
+.grid { display: grid; gap: 12px; }
+.label {
+  font-size: var(--sm-text-xs);
+  color: var(--sm-fg-subtle);
+  font-family: var(--sm-font-mono);
+}
+.hairline {
+  height: 1px;
+  background: var(--sm-border);
+  width: 100%;
+}

@@ -1,0 +1,14 @@
+[Unit]
+Description=Stock Market Celery Beat Scheduler
+After=network.target redis.service stockmarket-celery.service
+
+[Service]
+User=app
+WorkingDirectory={{ app_dir }}/backend
+EnvironmentFile={{ app_dir }}/.env
+ExecStart={{ app_dir }}/backend/.venv/bin/celery -A core beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

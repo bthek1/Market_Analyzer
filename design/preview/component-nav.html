@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Nav</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  body { background: #f9fafb; }
+  .card { background: #f9fafb; padding: 16px 20px; }
+  .nav { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .left { display:flex; align-items:center; gap: 24px; }
+  .wordmark { font: 700 18px var(--sm-font-sans); color: var(--sm-fg); display:flex; align-items:center; gap: 8px; }
+  .wordmark svg { display:block; }
+  .nav a { color: #4b5563; font: 400 14px var(--sm-font-sans); text-decoration: none; }
+  .nav a.active { color: #111827; font-weight: 500; }
+  .right { display:flex; align-items:center; gap: 16px; color: #4b5563; font: 400 14px var(--sm-font-sans); }
+  .right button { background: none; border: 0; color: #dc2626; font: 400 14px var(--sm-font-sans); cursor: pointer; padding: 0; }
+  .right button:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="card">
+  <nav class="nav">
+    <div class="left">
+      <div class="wordmark">
+        <svg width="22" height="22" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#2563eb"/><path d="M6 22 L12 16 L17 19 L23 11 L27 14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        Stock Market
+      </div>
+      <a class="active">Stocks</a>
+      <a>Watchlist</a>
+    </div>
+    <div class="right">
+      <span>alex@example.com</span>
+      <button>Logout</button>
+    </div>
+  </nav>
+</div>
+</body>
+</html>

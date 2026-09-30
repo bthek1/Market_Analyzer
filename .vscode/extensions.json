@@ -1,0 +1,27 @@
+{
+  "recommendations": [
+    // ── Python / Django ───────────────────────────────────────────────────────
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    "batisteo.vscode-django",
+
+    // ── Frontend ──────────────────────────────────────────────────────────────
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+
+    // ── Testing ───────────────────────────────────────────────────────────────
+    "vitest.explorer",
+
+    // ── AI ────────────────────────────────────────────────────────────────────
+    "github.copilot",
+    "github.copilot-chat",
+
+    // ── File formats ─────────────────────────────────────────────────────────
+    "mikestead.dotenv",
+    "tamasfe.even-better-toml",
+    "redhat.vscode-yaml"
+  ]
+}
+

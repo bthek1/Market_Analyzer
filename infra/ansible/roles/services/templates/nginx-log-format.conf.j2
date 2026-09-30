@@ -1,0 +1,20 @@
+# Managed by Ansible (infra/ansible/roles/services).
+#
+# JSON access log so Loki's `| json` filter can query individual fields without regex.
+# This lives in conf.d rather than in the site config because log_format is only valid
+# in nginx's http context, and a site file is a server block.
+log_format json_combined escape=json
+  '{'
+    '"timestamp":"$time_iso8601",'
+    '"remote_addr":"$remote_addr",'
+    '"method":"$request_method",'
+    '"path":"$uri",'
+    '"query":"$args",'
+    '"status":$status,'
+    '"bytes_sent":$body_bytes_sent,'
+    '"request_time":$request_time,'
+    '"upstream_time":"$upstream_response_time",'
+    '"referer":"$http_referer",'
+    '"user_agent":"$http_user_agent",'
+    '"request_id":"$request_id"'
+  '}';

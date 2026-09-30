@@ -1,0 +1,81 @@
+---
+- hosts: stockmarket-db
+  become: true
+  vars_files:
+    - vault/prod.yml
+  roles:
+    - db
+    - role: observability
+      when: observability_enabled | default(false) | bool
+      tags: observability
+      # No stockmarket units here, so no unit filter: an empty list ships the WHOLE
+      # journal, which on this box is postgres plus systemd - all of it worth having.
+      alloy_journal_units: []
+      # Loopback, not db_host: the exporter runs on this machine, and the pg_hba entry
+      # the db role adds for postgres_exporter is scoped to 127.0.0.1/32.
+      #
+      # The password is percent-encoded because it sits in a URL's userinfo section,
+      # where a raw @ : ? or # changes how the DSN parses. Two filters, not one:
+      # urlencode handles everything EXCEPT "/", which it treats as safe - and a raw "/"
+      # is the worst case of the lot, since it ends the authority section and silently
+      # turns the rest of the password into a path. So a plain urlencode is not enough.
+      alloy_postgres_dsn: >-
+        postgresql://postgres_exporter:{{ vault_postgres_exporter_password | urlencode | regex_replace('/', '%2F') }}@127.0.0.1:5432/postgres?sslmode=disable
+
+- hosts: stockmarket
+  become: true
+  vars_files:
+    - vault/prod.yml
+  roles:
+    - provision
+    - deploy
+    - services
+    - webhook
+    - role: observability
+      when: observability_enabled | default(false) | bool
+      tags: observability
+      # Neither of these reaches the journal: nginx daemonises and writes its own files,
+      # and deploy.sh redirects into a log file. Both need tailing directly.
+      alloy_log_files:
+        - path: /var/log/nginx/*.log
+          job: nginx
+        - path: /home/app/deploy.log
+          job: deploy
+      # The ONLY host running instrumented processes (gunicorn workers + Celery
+      # prefork children), so the only one that needs an OTLP receiver. Deliberately
+      # not set on stockmarket-db (nothing to trace) or stockmarket-obs (Tempo already
+      # holds 0.0.0.0:4317 there, so Alloy could not bind it).
+      alloy_traces_enabled: true
+      # Redis is the Celery broker and runs on this host, bound to localhost.
+      alloy_redis_address: "localhost:6379"
+      alloy_app_scrape_targets:
+        # One port per gunicorn worker (the api unit runs --workers 4). Each worker
+        # process has its own registry, so all four must be scraped and summed - a
+        # single endpoint would report only whichever worker served the scrape.
+        - job: django
+          targets:
+            - 127.0.0.1:8005
+            - 127.0.0.1:8006
+            - 127.0.0.1:8007
+            - 127.0.0.1:8008
+        # stockmarket-metrics.service: one process, consuming the Celery event stream.
+        - job: celery
+          targets:
+            - 127.0.0.1:8010
+
+- hosts: stockmarket-obs
+  become: true
+  vars_files:
+    - vault/prod.yml
+  roles:
+    - role: monitoring
+      when: observability_enabled | default(false) | bool
+      tags: observability
+    - role: observability
+      when: observability_enabled | default(false) | bool
+      tags: observability
+      # Whole journal, which here includes Docker and the three stack containers -
+      # so a broken Loki is still diagnosable from its own agent's journal lines.
+      alloy_journal_units: []
+      # Push to itself over the loopback rather than out and back via the LAN address.
+      obs_host: 127.0.0.1

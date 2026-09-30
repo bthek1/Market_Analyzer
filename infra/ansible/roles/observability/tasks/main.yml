@@ -1,0 +1,81 @@
+---
+# Grafana Alloy agent. Gated on observability_enabled so the role is a complete no-op
+# until the stack is deliberately switched on - same pattern as browser_agent_enabled.
+
+- name: Ensure apt keyring directory exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add Grafana apt signing key
+  get_url:
+    url: https://apt.grafana.com/gpg.key
+    dest: /etc/apt/keyrings/grafana.asc
+    mode: "0644"
+
+- name: Add Grafana apt repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/grafana.asc] https://apt.grafana.com stable main"
+    filename: grafana
+    state: present
+
+- name: Install Grafana Alloy
+  apt:
+    name: alloy
+    state: present
+    update_cache: true
+
+# The alloy deb runs the service as User=alloy, which by default can read neither the
+# journal nor nginx's logs. Both group memberships are load-bearing: without
+# systemd-journal the journal source silently ships nothing at all.
+#   systemd-journal - read the systemd journal
+#   adm             - read /var/log/nginx/*.log and deploy.log
+- name: Grant alloy read access to the journal and system logs
+  user:
+    name: alloy
+    groups: systemd-journal,adm
+    append: true
+  notify: restart alloy
+
+# deploy.sh appends with `exec >>`, which preserves whatever mode the file already has,
+# so setting it once here is enough. adm group ownership is what lets alloy read it
+# WITHOUT putting alloy in the app group, which would also expose the repo-root .env.
+- name: Ensure deploy log is readable by alloy
+  file:
+    path: /home/app/deploy.log
+    state: touch
+    owner: app
+    group: adm
+    mode: "0640"
+    modification_time: preserve
+    access_time: preserve
+  when: "'/home/app/deploy.log' in (alloy_log_files | map(attribute='path') | list)"
+
+- name: Write postgres exporter DSN
+  copy:
+    content: "{{ alloy_postgres_dsn }}"
+    dest: "{{ alloy_postgres_dsn_file }}"
+    owner: root
+    group: alloy
+    mode: "0640"
+  no_log: true
+  when: alloy_postgres_dsn | length > 0
+  notify: restart alloy
+
+- name: Write Alloy configuration
+  template:
+    src: config.alloy.j2
+    dest: /etc/alloy/config.alloy
+    owner: root
+    group: alloy
+    mode: "0640"
+    validate: "/usr/bin/alloy fmt %s"
+  notify: restart alloy
+
+- name: Enable and start Alloy
+  systemd:
+    name: alloy
+    enabled: true
+    state: started
+    daemon_reload: true

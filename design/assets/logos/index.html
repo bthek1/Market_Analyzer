@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1400, initial-scale=1" />
+<title>Stock Market Analyser — Logo options</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --blue:    #2563eb;
+    --blue-2:  #1d4ed8;
+    --blue-50: #eff6ff;
+    --green:   #16a34a;
+    --red:     #dc2626;
+    --ink:     #111827;
+    --muted:   #6b7280;
+    --line:    #e5e7eb;
+    --bg:      #f9fafb;
+    --card:    #ffffff;
+  }
+  html, body { margin: 0; padding: 0; background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--ink); }
+
+  /* Artboard tile shared chrome */
+  .ab { display: flex; flex-direction: column; gap: 0; width: 100%; height: 100%; background: var(--card); }
+  .ab-hero {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px;
+    background: var(--card);
+  }
+  .ab-hero.dark { background: #0b1220; }
+  .ab-strip {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--line);
+    background: var(--card);
+    min-height: 76px;
+  }
+  .ab-strip.compact { padding: 10px 18px; min-height: 56px; }
+  .ab-strip .lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: auto;
+  }
+  .wordmark {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    flex-wrap: nowrap;
+  }
+  .wordmark > span { white-space: nowrap; }
+  .wordmark.dark { color: #fff; }
+  .wordmark .sub {
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 2px;
+  }
+  .wordmark.dark .sub { color: #94a3b8; }
+
+  .fav-strip { display: flex; gap: 10px; align-items: center; }
+  .fav-strip .fav {
+    border-radius: 4px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 4px;
+  }
+  .fav-strip .fav.dark { background: #0b1220; border-color: #1f2937; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+        integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"
+        crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+        integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"
+        crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+        integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"
+        crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="logos.jsx"></script>
+<script type="text/babel" src="canvas-app.jsx"></script>
+</body>
+</html>

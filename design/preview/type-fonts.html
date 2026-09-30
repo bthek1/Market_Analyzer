@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Font families</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .pane { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .name { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); margin-bottom: 4px; }
+  .alpha { font-size: 28px; font-weight: 600; line-height: 1.1; }
+  .alpha.sans { font-family: var(--sm-font-sans); }
+  .alpha.mono { font-family: var(--sm-font-mono); letter-spacing: -0.01em; }
+  .weights { display:flex; gap: 14px; margin-top: 8px; font-size: 16px; }
+  .weights span { color: var(--sm-fg-muted); }
+  .flag { background: #fffbeb; border:1px solid #fde68a; color:#92400e; font-size: 11px; padding: 6px 10px; border-radius: 4px; font-family: var(--sm-font-sans); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="pane">
+    <div>
+      <div class="name">--sm-font-sans · Inter (Google Fonts)</div>
+      <div class="alpha sans">Aa Bb Cc 0123</div>
+      <div class="weights sans" style="font-family:var(--sm-font-sans)">
+        <span style="font-weight:400">Regular</span>
+        <span style="font-weight:500">Medium</span>
+        <span style="font-weight:600">Semibold</span>
+        <span style="font-weight:700">Bold</span>
+      </div>
+    </div>
+    <div>
+      <div class="name">--sm-font-mono · JetBrains Mono</div>
+      <div class="alpha mono">Aa Bb 0123 +1.49%</div>
+      <div class="weights" style="font-family:var(--sm-font-mono)">
+        <span style="font-weight:400">Regular</span>
+        <span style="font-weight:500">Medium</span>
+        <span style="font-weight:600">Semibold</span>
+      </div>
+    </div>
+  </div>
+  <div class="flag">⚠ Substitution — codebase ships no custom font. Inter + JetBrains Mono are nearest free matches. Drop .ttf/.woff into <code>fonts/</code> to swap.</div>
+</div>
+</body>
+</html>

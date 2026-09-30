@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Price delta chips</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .row { gap: 12px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 999px;
+    font: 500 12px var(--sm-font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.up    { background: #f0fdf4; color: #15803d; }
+  .chip.down  { background: #fef2f2; color: #b91c1c; }
+  .chip.flat  { background: #f3f4f6; color: #4b5563; }
+  .delta-inline { font-family: var(--sm-font-mono); font-variant-numeric: tabular-nums; font-weight: 500; font-size: 14px; }
+  .lbl { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="col">
+    <span class="lbl">Pill chips · used in tables / cards</span>
+    <div class="row">
+      <span class="chip up">▲ +1.49%</span>
+      <span class="chip up">▲ +12.40</span>
+      <span class="chip down">▼ −1.15%</span>
+      <span class="chip down">▼ −2.18</span>
+      <span class="chip flat">— 0.00%</span>
+    </div>
+  </div>
+  <div class="col">
+    <span class="lbl">Inline · used next to quote price</span>
+    <div class="row" style="gap: 28px">
+      <span class="delta-inline sm-up">+1.49% (+12.40)</span>
+      <span class="delta-inline sm-down">−1.15% (−2.18)</span>
+      <span class="delta-inline sm-flat">0.00% (0.00)</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

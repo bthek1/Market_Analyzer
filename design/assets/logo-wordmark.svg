@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" fill="none">
+  <g transform="translate(0 8) scale(0.75)">
+    <rect width="64" height="64" rx="14" fill="#2563eb"></rect>
+    <path d="M10 40 L20 32 L26 36 L34 22 L42 28 L54 18" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+    <circle cx="34" cy="22" r="3.2" fill="#ffffff"></circle>
+  </g>
+  <text x="62" y="40" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-weight="700" font-size="24" fill="#111827" letter-spacing="-0.015em">Stock Market</text>
+  <text x="218" y="40" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-weight="400" font-size="24" fill="#6b7280" letter-spacing="-0.01em">Analyser</text>
+</svg>

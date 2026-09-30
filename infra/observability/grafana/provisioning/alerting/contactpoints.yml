@@ -1,0 +1,19 @@
+# Alert delivery. SMTP itself is configured on the Grafana container (see the GF_SMTP_*
+# block in docker-compose.yml) and points at the LAN mail catcher on 192.168.2.207:1025.
+#
+# The catcher accepts mail for ANY recipient, so this address is a routing label rather
+# than a real mailbox - change it freely without creating an account anywhere.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: email
+    receivers:
+      - uid: sm-email
+        type: email
+        settings:
+          addresses: alerts@stockmarket.lab
+          # One mail per alert rather than one digest: with a handful of infrastructure
+          # rules, knowing WHICH fired matters more than inbox volume.
+          singleEmail: false
+        disableResolveMessage: false

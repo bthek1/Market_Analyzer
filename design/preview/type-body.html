@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Body & labels</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .row-spec { display: grid; grid-template-columns: 120px 1fr; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px dashed var(--sm-border); }
+  .row-spec:last-child { border-bottom: 0; }
+  .meta { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row-spec"><span class="meta">Body lg · 16/400</span><span class="sm-body-lg">Welcome, alex@example.com.</span></div>
+  <div class="row-spec"><span class="meta">Body · 14/400</span><span class="sm-body">Search by symbol or name (e.g. AAPL).</span></div>
+  <div class="row-spec"><span class="meta">Label · 14/500</span><span class="sm-label">Email address</span></div>
+  <div class="row-spec"><span class="meta">Caption · 12/400</span><span class="sm-caption">Password must be at least 8 characters.</span></div>
+  <div class="row-spec"><span class="meta">Eyebrow · 12/600</span><span class="sm-eyebrow">Market overview</span></div>
+</div>
+</body>
+</html>

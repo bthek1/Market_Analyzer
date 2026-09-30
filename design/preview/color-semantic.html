@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Semantic colors</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  table { width:100%; border-collapse: collapse; font-family: var(--sm-font-mono); font-size: 12px; }
+  th { text-align: left; font-weight: 600; padding: 6px 10px; color: var(--sm-fg-subtle); border-bottom: 1px solid var(--sm-border); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--sm-border); color: var(--sm-fg); }
+  .chip { display: inline-block; width: 28px; height: 18px; border-radius: 3px; border: 1px solid var(--sm-border); vertical-align: middle; margin-right: 10px; }
+  .var  { color: var(--sm-fg); font-weight: 600; }
+  .use  { color: var(--sm-fg-muted); font-family: var(--sm-font-sans); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <table>
+    <thead><tr><th>Token</th><th>Value</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chip" style="background:#f9fafb"></span><span class="var">--sm-bg</span></td><td>#F9FAFB</td><td class="use">Page background</td></tr>
+      <tr><td><span class="chip" style="background:#ffffff"></span><span class="var">--sm-bg-elevated</span></td><td>#FFFFFF</td><td class="use">Cards, nav, dialogs</td></tr>
+      <tr><td><span class="chip" style="background:#111827"></span><span class="var">--sm-fg</span></td><td>#111827</td><td class="use">Primary text</td></tr>
+      <tr><td><span class="chip" style="background:#4b5563"></span><span class="var">--sm-fg-muted</span></td><td>#4B5563</td><td class="use">Secondary text, nav links</td></tr>
+      <tr><td><span class="chip" style="background:#9ca3af"></span><span class="var">--sm-fg-faint</span></td><td>#9CA3AF</td><td class="use">Tertiary metadata (exchange · sector)</td></tr>
+      <tr><td><span class="chip" style="background:#e5e7eb"></span><span class="var">--sm-border</span></td><td>#E5E7EB</td><td class="use">Default border, row dividers</td></tr>
+      <tr><td><span class="chip" style="background:#2563eb"></span><span class="var">--sm-primary</span></td><td>#2563EB</td><td class="use">CTAs, links, chart stroke</td></tr>
+      <tr><td><span class="chip" style="background:#dc2626"></span><span class="var">--sm-danger</span></td><td>#DC2626</td><td class="use">Logout, remove, error text</td></tr>
+    </tbody>
+  </table>
+</div>
+</body>
+</html>

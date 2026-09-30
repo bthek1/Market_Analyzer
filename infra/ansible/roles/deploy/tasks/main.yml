@@ -1,0 +1,80 @@
+---
+- name: Ensure app .ssh directory exists
+  file:
+    path: /home/app/.ssh
+    state: directory
+    owner: app
+    group: app
+    mode: "0700"
+
+- name: Generate deploy SSH key for app user
+  become_user: app
+  openssh_keypair:
+    path: /home/app/.ssh/id_ed25519
+    type: ed25519
+    comment: stockmarket-deploy
+    state: present
+
+- name: Add GitHub to known_hosts
+  become_user: app
+  known_hosts:
+    name: github.com
+    key: "{{ lookup('pipe', 'ssh-keyscan -t ed25519 github.com 2>/dev/null') }}"
+    state: present
+
+- name: Clone repo (bootstrap only)
+  become_user: app
+  shell: git clone {{ github_repo_url }} {{ app_dir }}
+  args:
+    creates: "{{ app_dir }}/.git"
+  register: git_clone
+
+- name: Set ownership of app directory
+  file:
+    path: "{{ app_dir }}"
+    owner: app
+    group: app
+    recurse: true
+
+# Single repo-root .env (issue #4): read by Django, by the systemd units'
+# EnvironmentFile, and by vite build during deploy.sh. Mode 0600 owner app - it
+# holds SECRET_KEY, the DB password and ANTHROPIC_API_KEY.
+- name: Write .env from vault
+  template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+    owner: app
+    group: app
+    mode: "0600"
+  # Tagged observability so `just obs-deploy` can roll out OTEL_* without a full
+  # bootstrap - the same reason the api unit and the db exporter tasks carry it.
+  tags: observability
+  # systemd reads EnvironmentFile at unit START, so a rewritten .env changes nothing
+  # until the processes are restarted. Without these the file on disk would be correct
+  # while both services kept running on the old environment - the same class of silent
+  # drift as the celery -E flag. deploy.sh restarts them on a code push; an Ansible-only
+  # run (an env change with no code change) had nothing to trigger a restart at all.
+  notify:
+    - restart api
+    - restart celery
+
+- name: Install Python deps (no dev)
+  become_user: app
+  shell: /home/app/.local/bin/uv sync --no-dev
+  args:
+    chdir: "{{ app_dir }}/backend"
+  when: git_clone.changed
+
+- name: Install gunicorn into venv
+  become_user: app
+  shell: /home/app/.local/bin/uv pip install gunicorn --python {{ app_dir }}/backend/.venv/bin/python
+  args:
+    chdir: "{{ app_dir }}/backend"
+  when: git_clone.changed
+
+- name: Install frontend deps
+  become_user: app
+  shell: npm install
+  args:
+    chdir: "{{ app_dir }}/frontend"
+  when: git_clone.changed

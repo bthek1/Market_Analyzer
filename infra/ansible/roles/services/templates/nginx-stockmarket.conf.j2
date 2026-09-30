@@ -1,0 +1,39 @@
+server {
+    listen 80;
+    server_name {{ container_ip }} stockmarket.local;
+
+    # JSON so Loki can filter on fields (format defined in conf.d/json-log-format.conf).
+    # Alloy tails this file directly: nginx daemonises and never reaches the journal.
+    access_log /var/log/nginx/stockmarket-access.log json_combined;
+    error_log  /var/log/nginx/stockmarket-error.log warn;
+
+    location / {
+        root {{ app_dir }}/frontend/dist;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8004;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # Correlation id. nginx mints it, logs it, and hands it to Django, whose
+        # RequestIDMiddleware adopts it - so the access log line and every application
+        # log line for one request share an id. Without this they could never be joined.
+        proxy_set_header X-Request-ID $request_id;
+        proxy_read_timeout 120;
+    }
+
+    location /admin/ {
+        proxy_pass http://127.0.0.1:8004;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Request-ID $request_id;
+    }
+
+    location /static/ {
+        alias {{ app_dir }}/backend/staticfiles/;
+        expires 30d;
+    }
+}

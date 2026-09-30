@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Form fields</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 28px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  label { font: 500 14px var(--sm-font-sans); color: var(--sm-fg); }
+  input { font: 400 14px var(--sm-font-sans); border: 1px solid #e5e7eb; border-radius: 4px; padding: 8px 12px; color: var(--sm-fg); background: #fff; }
+  input::placeholder { color: var(--sm-fg-subtle); }
+  input:focus { outline: 2px solid #2563eb; outline-offset: 1px; border-color: #2563eb; }
+  .err input { border-color: #dc2626; }
+  .err-msg { color: #dc2626; font-size: 12px; }
+  .lbl-tag { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="grid">
+    <div class="field">
+      <span class="lbl-tag">Default</span>
+      <label>Email</label>
+      <input value="alex@example.com" />
+    </div>
+    <div class="field">
+      <span class="lbl-tag">Placeholder</span>
+      <label>Search</label>
+      <input placeholder="Search by symbol or name (e.g. AAPL)" />
+    </div>
+    <div class="field">
+      <span class="lbl-tag">Focused</span>
+      <label>Password</label>
+      <input type="password" value="••••••••" style="outline: 2px solid #2563eb; outline-offset: 1px; border-color: #2563eb" />
+    </div>
+    <div class="field err">
+      <span class="lbl-tag">Error</span>
+      <label>Email</label>
+      <input value="not-an-email" />
+      <span class="err-msg">Invalid email address</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

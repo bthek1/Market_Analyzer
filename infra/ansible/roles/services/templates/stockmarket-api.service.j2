@@ -1,0 +1,21 @@
+[Unit]
+Description=Stock Market Django API
+After=network.target postgresql.service redis.service
+
+[Service]
+User=app
+WorkingDirectory={{ app_dir }}/backend
+EnvironmentFile={{ app_dir }}/.env
+# Only gunicorn exports the per-worker metrics ports (8005-8008). Set here rather than in
+# the shared .env precisely because every other unit reads that same file and must NOT
+# claim one of these ports - see core/settings/prod.py.
+Environment=PROMETHEUS_EXPORT_WORKER_PORTS=true
+ExecStart={{ app_dir }}/backend/.venv/bin/gunicorn core.wsgi:application \
+    --bind 127.0.0.1:8004 \
+    --workers 4 \
+    --timeout 120
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

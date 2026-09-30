@@ -1,0 +1,18 @@
+[Unit]
+Description=Stock Market Prometheus metrics exporter (Celery events)
+Documentation=https://github.com/bthek1/Market_Analyzer/issues/2
+After=network.target redis.service
+Requires=redis.service
+
+[Service]
+User=app
+WorkingDirectory={{ app_dir }}/backend
+EnvironmentFile={{ app_dir }}/.env
+ExecStart={{ app_dir }}/backend/.venv/bin/python manage.py run_metrics_exporter \
+    --address 127.0.0.1 \
+    --port 8010
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

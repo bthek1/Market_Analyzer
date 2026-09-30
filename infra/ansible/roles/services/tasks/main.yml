@@ -1,0 +1,101 @@
+---
+# Tagged observability because this unit carries Environment=PROMETHEUS_EXPORT_WORKER_PORTS,
+# which core/settings/prod.py gates the per-worker metrics ports on. Untagged, obs-deploy
+# ships the gated settings without the flag that enables them - and gunicorn then binds no
+# metrics ports at all, silently removing every Django metric.
+- name: Deploy stockmarket-api systemd unit
+  template:
+    src: stockmarket-api.service.j2
+    dest: /etc/systemd/system/stockmarket-api.service
+  notify:
+    - reload systemd
+    - restart api
+  tags: observability
+
+# Tagged observability because this unit carries the -E flag the metrics exporter
+# depends on; without a restart the worker publishes no task events at all.
+- name: Deploy stockmarket-celery systemd unit
+  template:
+    src: stockmarket-celery.service.j2
+    dest: /etc/systemd/system/stockmarket-celery.service
+  notify:
+    - reload systemd
+    - restart celery
+  tags: observability
+
+- name: Deploy stockmarket-celery-beat systemd unit
+  template:
+    src: stockmarket-celery-beat.service.j2
+    dest: /etc/systemd/system/stockmarket-celery-beat.service
+  notify: reload systemd
+
+- name: Deploy stockmarket-metrics systemd unit
+  tags: observability
+  template:
+    src: stockmarket-metrics.service.j2
+    dest: /etc/systemd/system/stockmarket-metrics.service
+  notify: reload systemd
+
+- name: Deploy Nginx JSON log format
+  tags: observability
+  template:
+    src: nginx-log-format.conf.j2
+    dest: /etc/nginx/conf.d/json-log-format.conf
+  notify: reload nginx
+
+- name: Deploy Nginx site config
+  tags: observability
+  template:
+    src: nginx-stockmarket.conf.j2
+    dest: /etc/nginx/sites-available/stockmarket
+  notify: reload nginx
+
+- name: Enable stockmarket Nginx site
+  file:
+    src: /etc/nginx/sites-available/stockmarket
+    dest: /etc/nginx/sites-enabled/stockmarket
+    state: link
+  notify: reload nginx
+
+- name: Remove default Nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Allow Nginx to traverse app home directory
+  file:
+    path: /home/app
+    mode: "o+x"
+
+- name: Fix frontend dist permissions for Nginx
+  shell: |
+    [ -d {{ app_dir }}/frontend/dist ] && chmod -R o+rX {{ app_dir }}/frontend/dist || true
+    [ -d {{ app_dir }}/backend/staticfiles ] && chmod -R o+rX {{ app_dir }}/backend/staticfiles || true
+  changed_when: false
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: true
+
+- name: Enable and start app services
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - stockmarket-api
+    - stockmarket-celery
+    - stockmarket-celery-beat
+
+# Gated: with the stack off nothing scrapes it, so it would just hold a broker
+# connection and a port for no reason.
+- name: Enable and start the metrics exporter
+  tags: observability
+  systemd:
+    name: stockmarket-metrics
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: observability_enabled | default(false) | bool

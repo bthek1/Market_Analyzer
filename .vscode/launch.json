@@ -1,0 +1,64 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    // ── Backend: run Django dev server ───────────────────────────────────────
+    {
+      "name": "Django: dev server",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/manage.py",
+      "args": ["runserver", "0.0.0.0:8004"],
+      "django": true,
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "python": "${workspaceFolder}/backend/.venv/bin/python3",
+      "justMyCode": true
+    },
+    // ── Backend: pytest (all tests) ──────────────────────────────────────────
+    {
+      "name": "pytest: all",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["--tb=short", "-ra"],
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "python": "${workspaceFolder}/backend/.venv/bin/python3",
+      "justMyCode": false
+    },
+    // ── Backend: pytest (current file) ──────────────────────────────────────
+    {
+      "name": "pytest: current file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "--tb=short", "-ra"],
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "python": "${workspaceFolder}/backend/.venv/bin/python3",
+      "justMyCode": false
+    },
+    // ── Frontend: Vitest (all tests) ─────────────────────────────────────────
+    {
+      "name": "Vitest: all",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:watch", "--", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    // ── Frontend: Vitest (current file) ─────────────────────────────────────
+    {
+      "name": "Vitest: current file",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:watch", "--", "${relativeFile}", "--reporter=verbose"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ]
+}

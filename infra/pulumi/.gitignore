@@ -1,0 +1,9 @@
+# Local file-backend state (the equivalent of terraform.tfstate)
+state/
+# Passphrase that decrypts secrets in Pulumi.<stack>.yaml
+.passphrase
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc

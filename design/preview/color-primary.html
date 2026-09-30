@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Primary color</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .swatch { display: flex; flex-direction: column; gap: 4px; }
+  .chip {
+    height: 88px; border-radius: var(--sm-radius-md);
+    border: 1px solid var(--sm-border);
+    display: flex; align-items: flex-end; padding: 8px 10px;
+    color: var(--sm-fg-inverse);
+    font-family: var(--sm-font-mono); font-size: 11px;
+  }
+  .chip.light { color: var(--sm-fg); }
+  .meta { display: flex; justify-content: space-between; font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); }
+  .meta b { color: var(--sm-fg); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="swatches">
+    <div class="swatch">
+      <div class="chip light" style="background:#eff6ff">blue-50</div>
+      <div class="meta"><b>blue-50</b><span>#EFF6FF</span></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:#3b82f6">blue-500</div>
+      <div class="meta"><b>blue-500</b><span>#3B82F6</span></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:#2563eb">blue-600 · primary</div>
+      <div class="meta"><b>blue-600</b><span>#2563EB</span></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:#1d4ed8">blue-700 · hover</div>
+      <div class="meta"><b>blue-700</b><span>#1D4ED8</span></div>
+    </div>
+  </div>
+  <div class="hairline"></div>
+  <div class="row" style="justify-content:space-between">
+    <div class="col">
+      <span class="sm-eyebrow">Used for</span>
+      <span class="sm-body">Primary buttons · links · chart stroke · focus rings</span>
+    </div>
+    <div class="row">
+      <button style="background:#2563eb;color:#fff;border:0;border-radius:4px;padding:8px 14px;font:500 14px Inter,sans-serif">Sign in</button>
+      <a style="color:#2563eb;text-decoration:underline;font:400 14px Inter,sans-serif">View detail</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

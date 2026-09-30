@@ -1,0 +1,134 @@
+---
+- name: Set DNS resolvers
+  copy:
+    dest: /etc/resolv.conf
+    content: "nameserver 8.8.8.8\nnameserver 1.1.1.1\n"
+
+- name: Install locale support
+  apt:
+    name: locales
+    update_cache: true
+    state: present
+
+- name: Generate en_US.UTF-8 locale
+  locale_gen:
+    name: en_US.UTF-8
+    state: present
+
+- name: Set system locale
+  shell: update-locale LANG=en_US.UTF-8
+  changed_when: false
+
+- name: Install PostgreSQL 16 + pgvector deps
+  apt:
+    name:
+      - postgresql-16
+      - postgresql-server-dev-16
+      - build-essential
+      - git
+      - make
+      - gcc
+      - python3-psycopg2
+    update_cache: true
+    state: present
+
+- name: Enable and start PostgreSQL
+  systemd:
+    name: postgresql
+    enabled: true
+    state: started
+
+- name: Build and install pgvector v0.8.0
+  shell: |
+    git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git /tmp/pgvector
+    cd /tmp/pgvector && make && make install
+    rm -rf /tmp/pgvector
+  args:
+    creates: /usr/lib/postgresql/16/lib/vector.so
+
+- name: Set up PostgreSQL user
+  become_user: postgres
+  postgresql_user:
+    name: "{{ db_user }}"
+    password: "{{ vault_db_password }}"
+    state: present
+
+- name: Set up PostgreSQL database
+  become_user: postgres
+  postgresql_db:
+    name: "{{ db_name }}"
+    owner: "{{ db_user }}"
+    encoding: UTF-8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+    template: template0
+    state: present
+
+- name: Grant all privileges on database
+  become_user: postgres
+  postgresql_privs:
+    db: "{{ db_name }}"
+    role: "{{ db_user }}"
+    type: database
+    privs: ALL
+    state: present
+
+- name: Enable pgvector extension
+  become_user: postgres
+  postgresql_ext:
+    name: vector
+    db: "{{ db_name }}"
+    state: present
+
+# ---------------------------------------------------------------------------
+# Observability (issue #2): a read-only role for Alloy's postgres exporter.
+# Gated like everything else in the stack, so this is a no-op until it is enabled.
+# ---------------------------------------------------------------------------
+
+- name: Create postgres_exporter login role
+  become_user: postgres
+  postgresql_user:
+    name: postgres_exporter
+    password: "{{ vault_postgres_exporter_password }}"
+    role_attr_flags: LOGIN,NOSUPERUSER,NOCREATEDB,NOCREATEROLE
+    state: present
+  no_log: true
+  when: observability_enabled | default(false) | bool
+  tags: observability
+
+# pg_monitor is PostgreSQL's own built-in monitoring role (pg_read_all_stats +
+# pg_read_all_settings). It is exactly the grant an exporter needs and nothing more -
+# notably it can read statistics WITHOUT being able to read table data.
+- name: Grant pg_monitor to postgres_exporter
+  become_user: postgres
+  postgresql_membership:
+    group: pg_monitor
+    target_role: postgres_exporter
+    state: present
+  when: observability_enabled | default(false) | bool
+  tags: observability
+
+# Alloy runs on this host and connects over the loopback. This entry goes before the
+# generic 127.0.0.1 rule because pg_hba is FIRST-match, not best-match.
+- name: Allow postgres_exporter to connect over loopback
+  lineinfile:
+    path: /etc/postgresql/16/main/pg_hba.conf
+    line: "host  all  postgres_exporter  127.0.0.1/32  scram-sha-256"
+    insertafter: "^# IPv4 local connections"
+  notify: reload postgresql
+  when: observability_enabled | default(false) | bool
+  tags: observability
+
+- name: Allow remote connections from app container
+  lineinfile:
+    path: /etc/postgresql/16/main/postgresql.conf
+    regexp: "^#?listen_addresses"
+    line: "listen_addresses = '192.168.2.201,localhost'"
+  notify: restart postgresql
+
+- name: Allow app container in pg_hba.conf
+  lineinfile:
+    path: /etc/postgresql/16/main/pg_hba.conf
+    line: "host  {{ db_name }}  {{ db_user }}  192.168.2.200/32  scram-sha-256"
+    insertafter: "^# IPv4 local connections"
+  notify: restart postgresql

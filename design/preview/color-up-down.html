@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Up / down / flat</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .demo { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .quote { border: 1px solid var(--sm-border); border-radius: var(--sm-radius-md); padding: 14px 16px; display:flex; flex-direction:column; gap:6px; }
+  .ticker { font-family: var(--sm-font-mono); font-weight: 600; font-size: 13px; letter-spacing: 0.02em; color: var(--sm-fg); }
+  .price  { font-family: var(--sm-font-mono); font-weight: 600; font-size: 22px; font-variant-numeric: tabular-nums; color: var(--sm-fg); }
+  .delta  { font-family: var(--sm-font-mono); font-weight: 500; font-size: 12px; font-variant-numeric: tabular-nums; display: inline-flex; align-items:center; gap:4px; }
+  .swatch-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: center; font-family: var(--sm-font-mono); font-size: 11px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 8px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="demo">
+    <div class="quote">
+      <span class="ticker">NVDA</span>
+      <span class="price">$842.16</span>
+      <span class="delta sm-up">▲ +12.40 (+1.49%)</span>
+    </div>
+    <div class="quote">
+      <span class="ticker">AAPL</span>
+      <span class="price">$187.42</span>
+      <span class="delta sm-down">▼ −2.18 (−1.15%)</span>
+    </div>
+    <div class="quote">
+      <span class="ticker">SPY</span>
+      <span class="price">$542.00</span>
+      <span class="delta sm-flat">— 0.00 (0.00%)</span>
+    </div>
+  </div>
+  <div class="swatch-row">
+    <span><span class="dot" style="background:#16a34a"></span><b style="color:var(--sm-fg)">--sm-up</b> · #16A34A</span>
+    <span><span class="dot" style="background:#dc2626"></span><b style="color:var(--sm-fg)">--sm-down</b> · #DC2626</span>
+    <span><span class="dot" style="background:#6b7280"></span><b style="color:var(--sm-fg)">--sm-flat</b> · #6B7280</span>
+  </div>
+</div>
+</body>
+</html>

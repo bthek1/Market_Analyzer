@@ -1,0 +1,3 @@
+---
+# The LGTM server stack (Grafana + Prometheus + Loki + Tempo) on stockmarket-obs.
+obs_stack_dir: /opt/observability

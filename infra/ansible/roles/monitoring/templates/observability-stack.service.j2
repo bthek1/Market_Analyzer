@@ -1,0 +1,21 @@
+[Unit]
+Description=Observability stack (Grafana + Prometheus + Loki + Tempo)
+Documentation=https://github.com/bthek1/Market_Analyzer/issues/2
+Documentation=https://github.com/bthek1/Market_Analyzer/issues/5
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+# oneshot + RemainAfterExit: compose itself daemonises the containers (restart policies
+# keep them up), so systemd owns start/stop rather than supervising a foreground process.
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory={{ obs_stack_dir }}
+ExecStart=/usr/bin/docker compose up -d --remove-orphans
+ExecStop=/usr/bin/docker compose down
+ExecReload=/usr/bin/docker compose up -d --remove-orphans
+# First start pulls four images on a home connection.
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,59 @@
+---
+# Grafana Alloy: the single collection agent on every host. Pushes to the observability
+# server; nothing scrapes this host from outside.
+
+# Journal units shipped to Loki. Nginx is NOT here: it daemonises and writes to its own
+# files rather than to stdout, so its logs arrive via alloy_log_files instead.
+alloy_journal_units:
+  - stockmarket-api.service
+  - stockmarket-celery.service
+  - stockmarket-celery-beat.service
+  - stockmarket-metrics.service
+
+# Only read back this far on a cold start, so a restart after an outage does not replay
+# the whole journal into Loki.
+alloy_journal_max_age: 12h
+
+# Extra log files to tail. Each entry is {path, job}; job becomes the Loki label.
+alloy_log_files: []
+
+alloy_scrape_interval: 30s
+
+# Redis exporter (app host only). Blank disables the block entirely.
+alloy_redis_address: ""
+# Celery list keys to report a length for, as redis_key_size{key=...}. A Celery queue is
+# a Redis LIST, so its length IS the backlog - redis_db_keys counts keys and would only
+# ever tell you "a queue exists".
+#
+# "celery" is the one that matters: nothing in this project sets task_default_queue or
+# task_routes, so every task lands on Celery's built-in default queue, and the prod
+# worker unit has no -Q flag. Verified against the live broker, which has
+# _kombu.binding.celery and no binding for the other two. Those two are the names the
+# be-celery / be-celery-heavy recipes pass to -Q, kept here so the metric does not
+# silently vanish if routing is ever introduced.
+alloy_redis_check_keys:
+  - celery
+  - default
+  - heavy
+
+# Postgres exporter (db host only). The DSN carries a password, so it is written to a
+# separate 0640 file and read via local.file rather than inlined into config.alloy -
+# which also keeps it out of `ansible-playbook --diff` output. Blank disables the block.
+alloy_postgres_dsn: ""
+alloy_postgres_dsn_file: /etc/alloy/postgres.dsn
+
+# Traces (issue #5). OFF by default, like every other optional block here.
+#
+# Enable ONLY on hosts that actually run instrumented processes. In particular do NOT
+# enable it on stockmarket-obs: Tempo publishes 0.0.0.0:4317/4318 there, and 0.0.0.0
+# already covers 127.0.0.1, so an Alloy receiver would fail to bind and take the whole
+# agent down with it.
+alloy_traces_enabled: false
+
+# Where Alloy forwards spans. Resolves per host through obs_host, so the obs box's
+# loopback override is honoured the same way the Loki and Prometheus sinks honour it.
+alloy_otlp_endpoint: "{{ obs_host }}:4317"
+
+# Application metrics endpoints on this host, scraped over the loopback. Each entry is
+# {job, targets}. Empty by default - only the app host has any.
+alloy_app_scrape_targets: []

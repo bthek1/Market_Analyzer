@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Logo lockups</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 20px; align-items: stretch; }
+  .tile { border: 1px solid var(--sm-border); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .tile.dark { background: #0b1220; border-color: #0b1220; }
+  .tile.dark .lbl { color: #94a3b8; }
+  .tile .lbl { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); }
+  .stage { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .wordmark { display: inline-flex; align-items: center; gap: 10px; font: 700 22px var(--sm-font-sans); color: var(--sm-fg); letter-spacing: -0.015em; white-space: nowrap; }
+  .wordmark .sub { font-weight: 400; color: var(--sm-fg-muted); }
+  .wordmark.inv { color: #fff; }
+  .wordmark.inv .sub { color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="grid">
+    <div class="tile">
+      <span class="lbl">Wordmark · primary</span>
+      <div class="stage">
+        <div class="wordmark">
+          <svg width="32" height="32" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#2563eb"/><path d="M10 40 L20 32 L26 36 L34 22 L42 28 L54 18" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="34" cy="22" r="3.2" fill="#fff"/></svg>
+          <span>Stock Market</span><span class="sub">Analyser</span>
+        </div>
+      </div>
+    </div>
+    <div class="tile">
+      <span class="lbl">Mark only · favicon</span>
+      <div class="stage">
+        <svg width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#2563eb"/><path d="M10 40 L20 32 L26 36 L34 22 L42 28 L54 18" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="34" cy="22" r="3.2" fill="#fff"/></svg>
+      </div>
+    </div>
+    <div class="tile dark">
+      <span class="lbl">Wordmark · on dark</span>
+      <div class="stage">
+        <div class="wordmark inv">
+          <svg width="32" height="32" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1d4ed8"/><path d="M10 40 L20 32 L26 36 L34 22 L42 28 L54 18" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="34" cy="22" r="3.2" fill="#fff"/></svg>
+          <span>Stock Market</span><span class="sub">Analyser</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

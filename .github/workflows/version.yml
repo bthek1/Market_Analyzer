@@ -1,0 +1,51 @@
+name: Auto Version
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: auto-version-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backend-tests:
+    uses: ./.github/workflows/backend.yml
+
+  frontend-tests:
+    uses: ./.github/workflows/frontend.yml
+
+  bump:
+    needs: [backend-tests, frontend-tests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest tag
+        id: tag
+        run: |
+          LATEST=$(git tag --sort=-v:refname | head -n1)
+          echo "latest=${LATEST:-v0.0.0}" >> $GITHUB_OUTPUT
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          LATEST=${{ steps.tag.outputs.latest }}
+          VERSION=${LATEST#v}
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+          NEW="v$MAJOR.$MINOR.$((PATCH + 1))"
+          echo "new_tag=$NEW" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.bump.outputs.new_tag }}
+          git push origin ${{ steps.bump.outputs.new_tag }}

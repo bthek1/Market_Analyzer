@@ -1,0 +1,95 @@
+[project]
+name = "stockmarket"
+version = "0.1.0"
+description = "Stock Market Analyser backend"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.1",
+    "djangorestframework>=3.15",
+    "djangorestframework-simplejwt>=5.3",
+    "psycopg[binary]>=3.2",
+    "django-environ>=0.11",
+    "pgvector>=0.3",
+    "celery[redis]>=5.4",
+    "redis>=5.0",
+    "httpx>=0.27",
+    "beautifulsoup4>=4.12",
+    "duckduckgo-search>=6.0",
+    "anthropic>=0.34",
+    "django-cors-headers>=4.4",
+    "whitenoise>=6.7",
+    "rich>=13.0",
+    "django-allauth>=65.16.1",
+    "dj-rest-auth[with-social]>=7.2.0",
+    "ruff>=0.15.13",
+    "yfinance>=1.3.0",
+    "gunicorn>=26.0.0",
+    "django-celery-results>=2.6.0",
+    "django-celery-beat>=2.9.0",
+    "django-filter>=25.2",
+    "django-solo>=2.5.1",
+    "browser-use>=0.13.7",
+    "django-prometheus>=2.5.0",
+    "opentelemetry-sdk>=1.29",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.29",
+    "opentelemetry-instrumentation-django>=0.50b0",
+    "opentelemetry-instrumentation-celery>=0.50b0",
+    "opentelemetry-instrumentation-psycopg>=0.50b0",
+    "opentelemetry-instrumentation-redis>=0.50b0",
+    "opentelemetry-instrumentation-httpx>=0.50b0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6",
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "pytest-cov>=5.0",
+    "pytest-mock>=3.14",
+    "factory-boy>=3.3",
+    "faker>=26.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "core.settings.test"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --cov=apps --cov-report=term-missing --cov-fail-under=80 -m 'not llm_live and not browser_live'"
+markers = [
+    "llm_live: requires a running Ollama instance — skipped by default, run with: pytest -m llm_live --no-cov",
+    "browser_live: launches a real browser and reaches the internet — skipped by default, run with: pytest -m browser_live --no-cov",
+    "title_task: opts out of the autouse patch of the chat title task, for the tests that assert on it",
+]
+
+[tool.coverage.run]
+omit = ["*/migrations/*", "*/tests/*", "*/__init__.py", "*/settings/*", "*/management/*"]
+
+[tool.coverage.report]
+fail_under = 80
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/*" = ["E501", "N803"]
+"tests/*" = ["E501", "N803"]
+"**/migrations/*" = ["RUF012"]
+
+[dependency-groups]
+dev = [
+    # Parses the observability stack's provisioning YAML in core/tests/
+    # test_observability_assets.py - a broken alert rule or a typo'd datasource uid
+    # otherwise only shows up as an empty Grafana panel in production.
+    "pyyaml>=6.0",
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+    "pytest-django>=4.12.0",
+    "pytest-xdist>=3.6",
+]

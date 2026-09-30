@@ -1,0 +1,12 @@
+[Unit]
+Description=Stock Market Webhook Listener
+After=network.target
+
+[Service]
+User=app
+ExecStart=/usr/bin/webhook -hooks /etc/webhook/hooks.json -port 9000 -verbose
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

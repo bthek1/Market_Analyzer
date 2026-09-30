@@ -1,0 +1,149 @@
+---
+- name: Set DNS resolvers
+  copy:
+    dest: /etc/resolv.conf
+    content: "nameserver 8.8.8.8\nnameserver 1.1.1.1\n"
+
+- name: Create app user
+  user:
+    name: app
+    shell: /bin/bash
+    create_home: true
+
+- name: Grant app passwordless sudo
+  copy:
+    dest: /etc/sudoers.d/app
+    content: "app ALL=(ALL) NOPASSWD:ALL\n"
+    mode: "0440"
+
+- name: Install core packages
+  apt:
+    name:
+      - git
+      - curl
+      - wget
+      - unzip
+      - build-essential
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - software-properties-common
+      - make
+      - gcc
+      - python3-psycopg2
+      - btop
+    update_cache: true
+    state: present
+
+- name: Add deadsnakes PPA for Python 3.13
+  apt_repository:
+    repo: ppa:deadsnakes/ppa
+    state: present
+
+- name: Install Python 3.13
+  apt:
+    name:
+      - python3.13
+      - python3.13-dev
+      - python3.13-venv
+    state: present
+
+- name: Add Node.js 22 apt source
+  shell: curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  args:
+    creates: /etc/apt/sources.list.d/nodesource.list
+
+- name: Install Node.js
+  apt:
+    name: nodejs
+    state: present
+
+- name: Install Redis and Nginx
+  apt:
+    name:
+      - redis-server
+      - nginx
+    state: present
+
+- name: Enable and start Redis and Nginx
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - redis-server
+    - nginx
+
+- name: Install uv for app user
+  become_user: app
+  shell: curl -LsSf https://astral.sh/uv/install.sh | sh
+  args:
+    creates: /home/app/.local/bin/uv
+
+- name: Set locale
+  shell: locale-gen en_US.UTF-8 && update-locale LANG=en_US.UTF-8
+  changed_when: false
+
+# --------------------------------------------------------------------------
+# Browser agent (/browse). browser-use drives a headless Chromium over CDP; it
+# finds the binary Playwright installs, and falls back to installing it itself
+# at first run (slow, inside the request). Do it here instead. Skipped unless
+# browser_agent_enabled is true - the feature ships off, and Chromium plus its
+# shared libraries is ~500 MB on a 40 GB disk.
+# --------------------------------------------------------------------------
+# The apt half. It MUST come first: `playwright install --with-deps` skips it QUIETLY
+# when it cannot elevate, leaving a complete-looking ~/.cache/ms-playwright whose chrome
+# dies at first launch with "libnspr4.so: cannot open shared object file".
+#
+# Resolved as the app user and installed via the apt module, rather than letting root run
+# `uvx playwright install-deps` directly: that shells out to apt-get anyway, but reports
+# changed on every run and puts a root-owned uv cache in whichever HOME it inherits. This
+# way Ansible owns the idempotency, and only the package list comes from playwright.
+- name: Resolve the Chromium system dependencies playwright wants
+  become_user: app
+  shell: /home/app/.local/bin/uvx playwright install-deps --dry-run chromium
+  environment:
+    HOME: /home/app
+  register: chromium_deps
+  changed_when: false
+  # --dry-run exits 1 precisely when it found something missing - the case we are here
+  # for - so only a rc beyond that is a real failure.
+  failed_when: chromium_deps.rc not in [0, 1]
+  when: browser_agent_enabled | default(false) | bool
+
+# stdout is "Missing system dependencies (N):" followed by one indented package per line;
+# an already-provisioned host reports none, so the list is empty and apt is a no-op.
+- name: Install Chromium system dependencies (root - apt)
+  apt:
+    name: "{{ chromium_deps.stdout_lines[1:] | map('trim') | select | list }}"
+    state: present
+  when:
+    - browser_agent_enabled | default(false) | bool
+    - chromium_deps.stdout_lines | default([]) | length > 1
+
+# Downloaded as the app user so it lands in ~app/.cache/ms-playwright, where the
+# API process (running as app) will find it. No `creates:` guard on the cache dir -
+# it exists after a partial or dep-less download too, so guarding on it pins a
+# broken install permanently. `playwright install` is itself idempotent and returns
+# in ~1 s when the binary is already there.
+- name: Install the Chromium binary for the app user
+  become_user: app
+  shell: /home/app/.local/bin/uvx playwright install chromium
+  environment:
+    HOME: /home/app
+  register: chromium_install
+  changed_when: "'Downloading' in chromium_install.stdout"
+  when: browser_agent_enabled | default(false) | bool
+
+# The check the two tasks above cannot make for themselves: a binary that is
+# present but cannot resolve its shared libraries exits non-zero here, at
+# provision time, rather than 500-ing inside the first /browse request.
+- name: Verify Chromium starts
+  become_user: app
+  shell: >-
+    "$(/home/app/.local/bin/uvx playwright install --dry-run chromium
+    | awk '/Install location/ {print $3; exit}')/chrome-linux64/chrome" --version
+  environment:
+    HOME: /home/app
+  changed_when: false
+  when: browser_agent_enabled | default(false) | bool

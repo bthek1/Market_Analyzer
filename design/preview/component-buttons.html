@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Buttons</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .row { gap: 14px; }
+  button { font: 500 14px var(--sm-font-sans); cursor: pointer; border-radius: 4px; padding: 8px 16px; border: 0; transition: background 150ms ease-out; }
+  .primary { background: #2563eb; color: #fff; }
+  .primary:hover { background: #1d4ed8; }
+  .primary[disabled] { opacity: .5; cursor: not-allowed; }
+  .ghost   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  .ghost:hover { background: #fee2e2; }
+  .neutral { background: #fff; color: #111827; border: 1px solid #e5e7eb; }
+  .neutral:hover { background: #f9fafb; }
+  .link    { background: none; color: #dc2626; padding: 0; font-weight: 400; }
+  .link:hover { text-decoration: underline; }
+  .grp { display: flex; flex-direction: column; gap: 6px; }
+  .lbl { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row" style="align-items: flex-start">
+    <div class="grp">
+      <span class="lbl">Primary · default · hover · disabled</span>
+      <div class="row">
+        <button class="primary">Sign in</button>
+        <button class="primary" style="background:#1d4ed8">Sign in</button>
+        <button class="primary" disabled>Signing in…</button>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="align-items: flex-start">
+    <div class="grp">
+      <span class="lbl">Watchlist toggle</span>
+      <div class="row">
+        <button class="primary">Add to watchlist</button>
+        <button class="ghost">Remove from watchlist</button>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="align-items: flex-start">
+    <div class="grp">
+      <span class="lbl">Neutral · Link</span>
+      <div class="row">
+        <button class="neutral">Search</button>
+        <button class="link">Logout</button>
+        <button class="link" style="color:#2563eb">View detail</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

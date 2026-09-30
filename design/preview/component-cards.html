@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cards</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  body { background: #f9fafb; }
+  .card { background: #f9fafb; }
+  .demo { display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px; align-items: start; }
+  .auth-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / .1), 0 1px 2px -1px rgb(0 0 0 / .1); padding: 28px; }
+  .auth-card h3 { margin: 0 0 14px; font: 700 22px var(--sm-font-sans); }
+  .auth-card label { display: block; font: 500 13px var(--sm-font-sans); margin-bottom: 4px; }
+  .auth-card input { width: 100%; padding: 8px 12px; font: 400 14px var(--sm-font-sans); border:1px solid #e5e7eb; border-radius: 4px; }
+  .auth-card .submit { margin-top: 14px; width: 100%; background: #2563eb; color:#fff; border:0; border-radius: 4px; padding: 9px; font: 500 14px var(--sm-font-sans); cursor: pointer; }
+  .data-card { background:#fff; border:1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+  .data-card h4 { margin: 0 0 12px; font: 600 16px var(--sm-font-sans); }
+  .chart { height: 130px; background: linear-gradient(180deg, #eff6ff 0%, #ffffff 80%); border-radius: 4px; position: relative; overflow: hidden; }
+  .chart svg { width: 100%; height: 100%; display: block; }
+  .lbl-tag { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="demo">
+    <div>
+      <div class="lbl-tag">Auth card · shadow, no border</div>
+      <div class="auth-card">
+        <h3>Sign in</h3>
+        <label>Email</label>
+        <input value="alex@example.com" />
+        <button class="submit">Sign in</button>
+      </div>
+    </div>
+    <div>
+      <div class="lbl-tag">Data card · border, no shadow</div>
+      <div class="data-card">
+        <h4>Price History</h4>
+        <div class="chart">
+          <svg viewBox="0 0 400 130" preserveAspectRatio="none">
+            <polyline fill="none" stroke="#2563eb" stroke-width="2"
+              points="0,90 30,80 60,70 90,85 120,60 150,55 180,65 210,40 240,50 270,30 300,38 330,25 360,32 400,18" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

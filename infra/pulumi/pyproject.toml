@@ -1,0 +1,15 @@
+[project]
+name = "stockmarket-infra"
+version = "0.1.0"
+description = "Pulumi program provisioning the Proxmox LXC containers"
+requires-python = ">=3.13"
+dependencies = [
+    "pulumi>=3.140,<4.0.0",
+    # Bridges the bpg/proxmox Terraform provider. Must bridge a bpg version
+    # compatible with the 0.107.0 provider Terraform currently has locked, so
+    # the imported state schema matches.
+    "pulumi-proxmoxve>=7.0.0,<8.0.0",
+]
+
+[tool.ruff]
+line-length = 100

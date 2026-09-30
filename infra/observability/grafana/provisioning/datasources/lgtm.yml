@@ -1,0 +1,82 @@
+# Provisioned so a rebuilt Grafana container comes back already wired. Do not edit
+# datasources in the UI - provisioned ones are read-only there, by design.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      # Match the scrape interval so $__rate_interval works out sensibly.
+      timeInterval: 30s
+      httpMethod: POST
+      # An exemplar carries a trace id; without this mapping Grafana renders the dot
+      # but has nowhere to send you. Tempo's span metrics are the only source of them
+      # here (django-prometheus does not emit exemplars).
+      exemplarTraceIdDestinations:
+        # The label name is Tempo's, not ours, and it is camelCase: `traceID`. Verified
+        # against the live Prometheus exemplar API on 2.10.8 - with the wrong name
+        # Grafana still DRAWS the exemplar dot and clicking it simply does nothing,
+        # which is the quietest possible failure.
+        - name: traceID
+          datasourceUid: tempo
+          urlDisplayLabel: "View trace"
+
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      maxLines: 2000
+      # Without Tempo there is no trace to click through to, so the correlation id is
+      # the pivot: one log line -> every line from the same request. The regex reads
+      # request_id out of our JSON log body (core/logging.py), and the link queries Loki
+      # itself rather than another datasource.
+      derivedFields:
+        - name: request_id
+          matcherRegex: '"request_id"\s*:\s*"([^"]+)"'
+          datasourceUid: loki
+          url: '{job=~".+"} | json | request_id = "${__value.raw}"'
+          urlDisplayLabel: "All logs for this request"
+        # The trace pivot (issue #5 phase 3). core/logging.py emits trace_id into the
+        # JSON body whenever a span is active, so a log line links straight to its
+        # waterfall in Tempo. It is ABSENT when tracing is off or outside a span, which
+        # is why request_id above stays: it is the only pivot that ALWAYS exists, and
+        # the streaming paths (SSE agent runs) still have no span to link to.
+        - name: trace_id
+          matcherRegex: '"trace_id"\s*:\s*"([^"]+)"'
+          datasourceUid: tempo
+          url: '${__value.raw}'
+          urlDisplayLabel: "View trace"
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      # Grafana streams search results back as they are found rather than blocking on
+      # the whole query. Must match stream_over_http_enabled in tempo/config.yml.
+      streamingEnabled:
+        search: true
+      # Service graph needs Tempo's metrics_generator remote-writing span metrics to
+      # Prometheus, which is NOT configured (issue #5 phase 1 keeps the server minimal).
+      # The node graph below works off the trace itself and needs no generator.
+      nodeGraph:
+        enabled: true
+      # Trace -> logs, the inverse of the loki datasource's trace_id derived field.
+      # Only correct since phase 3: before core/logging.py emitted trace_id this would
+      # have resolved to nothing on every single span.
+      tracesToLogsV2:
+        datasourceUid: loki
+        # A span's own window is often sub-millisecond; widen it or the query returns
+        # only whatever line happened to share the timestamp.
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        filterByTraceID: false
+        customQuery: true
+        query: '{job=~".+"} | json | trace_id = "$${__span.traceId}"'

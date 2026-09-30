@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Mono — tickers & numbers</title>
+<link rel="stylesheet" href="card.css" />
+<style>
+  .row-spec { display: grid; grid-template-columns: 140px 1fr; align-items: baseline; gap: 16px; padding: 10px 0; border-bottom: 1px dashed var(--sm-border); }
+  .row-spec:last-child { border-bottom: 0; }
+  .meta { font-family: var(--sm-font-mono); font-size: 11px; color: var(--sm-fg-subtle); }
+  .ticker-lg { font-family: var(--sm-font-mono); font-weight: 600; font-size: 18px; }
+  .num-row { font-family: var(--sm-font-mono); font-weight: 500; font-size: 14px; font-variant-numeric: tabular-nums; display:flex; gap: 22px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row-spec"><span class="meta">Hero number · 48/600</span><span class="sm-num-lg">$842.16</span></div>
+  <div class="row-spec"><span class="meta">Ticker · 18/600</span><span class="ticker-lg">AAPL · NVDA · TSLA · SPY</span></div>
+  <div class="row-spec"><span class="meta">Tabular · 14/500</span><span class="num-row"><span>187.42</span><span>1,204,310</span><span>−1.15%</span><span>52w 145.20–199.62</span></span></div>
+  <div class="row-spec"><span class="meta">Inline</span><span class="sm-body">Close <span class="sm-num" style="color:var(--sm-fg)">$187.42</span> · vol <span class="sm-num">1.2M</span></span></div>
+</div>
+</body>
+</html>

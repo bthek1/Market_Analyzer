@@ -1,0 +1,13 @@
+---
+- name: restart postgresql
+  systemd:
+    name: postgresql
+    state: restarted
+
+# pg_hba.conf is re-read on SIGHUP - it needs no restart, and a restart would drop every
+# app connection for the sake of an auth-rules change. (listen_addresses DOES need a
+# restart, which is why the existing handler above stays.)
+- name: reload postgresql
+  systemd:
+    name: postgresql
+    state: reloaded

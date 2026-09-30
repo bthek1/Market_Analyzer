@@ -1,0 +1,18 @@
+# Dashboards are checked into the repo as JSON under grafana/dashboards/ and mounted
+# read-only, so they survive a container rebuild and show up in code review. Phase 1
+# ships the provider with an empty directory; phases 2-4 add the JSON files.
+apiVersion: 1
+
+providers:
+  - name: stockmarket
+    orgId: 1
+    folder: Stock Market
+    type: file
+    disableDeletion: false
+    # UI edits are allowed but are overwritten on restart - export the JSON back into
+    # the repo to keep a change.
+    allowUiUpdates: true
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false
